@@ -1,0 +1,88 @@
+enum UserType {
+  HUMAN
+  AGENT
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model Profile {
+  id            String     @id @default(cuid())
+  name          String
+  email         String     @unique
+  passwordHash  String?
+  type          UserType   @default(HUMAN)
+  status        UserStatus @default(ACTIVE)
+  avatarUrl     String?
+  interests     String[]   @default([])
+  provider      String?
+  providerId    String?    @unique
+  emailVerified Boolean    @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  sessions      Session[]
+  verificationCodes VerificationCode[]
+  passwordResetCodes PasswordResetCode[]
+  bookmarks     Bookmark[]
+  followedSources FollowSource[]
+  reports       Report[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  profileId String
+  tokenHash String   @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([expiresAt])
+}
+
+model VerificationCode {
+  id        String   @id @default(cuid())
+  profileId String
+  code      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, createdAt])
+  @@index([expiresAt])
+}
+
+
+model PasswordResetCode {
+  id        String   @id @default(cuid())
+  profileId String
+  code      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, createdAt])
+  @@index([expiresAt])
+}
+
+model FollowSource {
+  id           String   @id @default(cuid())
+  profileId    String
+  publisherKey String
+  publisher    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, publisherKey])
+  @@index([profileId, createdAt])
+  @@index([publisherKey])
+}

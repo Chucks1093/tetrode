@@ -1,0 +1,18 @@
+name: proofline
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: proofline-postgres
+    restart: unless-stopped
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: proofline
+      POSTGRES_USER: proofline
+      POSTGRES_PASSWORD: proofline
+    volumes:
+      - proofline_pg:/var/lib/postgresql/data
+
+volumes:
+  proofline_pg:

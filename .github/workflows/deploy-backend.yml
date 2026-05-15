@@ -1,0 +1,103 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'server/**'
+      - '.github/workflows/deploy-backend.yml'
+
+concurrency:
+  group: deploy-proofline-backend-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.LIGHTSAIL_HOST }}" ]; then
+            echo "Missing LIGHTSAIL_HOST secret"
+            exit 1
+          fi
+          if [ -z "${{ secrets.LIGHTSAIL_USER }}" ]; then
+            echo "Missing LIGHTSAIL_USER secret"
+            exit 1
+          fi
+          if [ -z "${{ secrets.LIGHTSAIL_SSH_PRIVATE_KEY }}" ]; then
+            echo "Missing LIGHTSAIL_SSH_PRIVATE_KEY secret"
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s' "${{ secrets.LIGHTSAIL_SSH_PRIVATE_KEY }}" > ~/.ssh/lightsail_key
+          chmod 600 ~/.ssh/lightsail_key
+
+          # Prefer pinned host key via keyscan. Fallback keeps deploy moving if keyscan is blocked.
+          if ! ssh-keyscan -T 30 -H "${{ secrets.LIGHTSAIL_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "ssh-keyscan failed, using temporary StrictHostKeyChecking=no fallback"
+          fi
+
+          cat > ~/.ssh/config <<EOF
+          Host lightsail-target
+            HostName ${{ secrets.LIGHTSAIL_HOST }}
+            User ${{ secrets.LIGHTSAIL_USER }}
+            IdentityFile ~/.ssh/lightsail_key
+            IdentitiesOnly yes
+            ServerAliveInterval 20
+            ServerAliveCountMax 3
+            ConnectTimeout 20
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Deploy backend on Lightsail
+        run: |
+          set -euo pipefail
+          ssh lightsail-target <<'EOF_SSH'
+          set -euo pipefail
+
+          export NVM_DIR="$HOME/.nvm"
+          . "$NVM_DIR/nvm.sh"
+          nvm use 22 >/dev/null
+          corepack enable >/dev/null 2>&1 || true
+
+          APP_DIR="${{ secrets.LIGHTSAIL_APP_DIR }}"
+          if [ -z "$APP_DIR" ]; then
+            APP_DIR="$HOME/proofline"
+          fi
+
+          cd "$APP_DIR"
+
+          git fetch origin main
+          git reset --hard origin/main
+
+          cd "$APP_DIR/server"
+          pnpm install --frozen-lockfile --child-concurrency=1
+          pnpm exec prisma migrate deploy
+          pnpm exec prisma generate
+          pnpm build
+
+          sudo install -D -m 644 "$APP_DIR/server/deploy/lightsail/proofline-api.service" /etc/systemd/system/proofline-api.service
+
+          if command -v nginx >/dev/null 2>&1; then
+            sudo install -D -m 644 "$APP_DIR/server/deploy/lightsail/nginx-proofline.conf" /etc/nginx/sites-available/proofline
+            sudo ln -sfn /etc/nginx/sites-available/proofline /etc/nginx/sites-enabled/proofline
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo nginx -t
+            sudo systemctl reload nginx
+          fi
+
+          sudo systemctl daemon-reload
+          sudo systemctl enable --now proofline-api
+          sudo systemctl restart proofline-api
+
+          sudo systemctl --no-pager --full status proofline-api
+          EOF_SSH

@@ -1,0 +1,183 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgres"
+  url      = env("DATABASE_URL") // You can safely ignore the error on this line.
+}
+
+model Trend {
+  id          String   @id @default(cuid())
+  source      String
+  category    String
+  title       String
+  url         String
+  score       Int?
+  publishedAt DateTime?
+  capturedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sources     Source[]
+  story       Story?
+}
+
+model Source {
+  id          String   @id @default(cuid())
+  trendId     String
+  rank        Int
+  url             String
+  title           String
+  publisher       String
+  publishedAt     DateTime?
+  snippet         String
+  imageUrl        String?
+  faviconUrl      String?
+  sourceType      String
+  reliability     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  trend       Trend    @relation(fields: [trendId], references: [id], onDelete: Cascade)
+
+  @@unique([trendId, url])
+  @@index([trendId, rank])
+}
+
+model Story {
+  id           String         @id @default(cuid())
+  trendId      String         @unique
+  headline     String
+  title        String
+  subtitle     String
+  bodyMarkdown String
+  verdict      String
+  confidence   Int
+  imageUrl     String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  trend        Trend          @relation(fields: [trendId], references: [id], onDelete: Cascade)
+  comments     Comment[]
+  bookmarks    Bookmark[]
+}
+
+enum ReportTargetType {
+  STORY
+  COMMENT
+}
+
+enum ReportReason {
+  MISINFORMATION
+  HARASSMENT
+  SPAM
+  HATE
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  DISMISSED
+  ACTIONED
+}
+
+enum CommentAuthorType {
+  HUMAN
+  AI
+}
+
+enum CommentActorType {
+  HUMAN
+  AGENT
+}
+
+enum CommentStance {
+  SUPPORT
+  AGAINST
+  QUESTION
+  NEUTRAL
+}
+
+model Comment {
+  id              String           @id @default(cuid())
+  storyId         String
+  actorType       CommentActorType
+  actorId         String
+  parentCommentId String?
+  authorType      CommentAuthorType
+  body            String
+  stance          CommentStance
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  story           Story            @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  parent          Comment?         @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         Comment[]        @relation("CommentReplies")
+
+  @@index([storyId, createdAt])
+  @@index([actorType, actorId])
+  @@index([parentCommentId])
+}
+
+enum AgentStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  REVOKED
+}
+
+model Agent {
+  id                     String      @id @default(cuid())
+  name                   String
+  ownerEmail             String
+  ownerVerified          Boolean     @default(false)
+  status                 AgentStatus @default(PENDING_VERIFICATION)
+  keyId                  String      @unique
+  secretHash             String
+  scopes                 String[]    @default([])
+  verificationCode       String?
+  verificationCodeExpiresAt DateTime?
+  verificationCodeUsedAt DateTime?
+  revokedAt              DateTime?
+  lastUsedAt             DateTime?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  @@index([ownerEmail])
+  @@index([status])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  profileId String
+  storyId   String
+  createdAt DateTime @default(now())
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, storyId])
+  @@index([profileId, createdAt])
+  @@index([storyId, createdAt])
+}
+
+model Report {
+  id                String           @id @default(cuid())
+  reporterProfileId String
+  targetType        ReportTargetType
+  targetId          String
+  reason            ReportReason
+  details           String?
+  status            ReportStatus     @default(OPEN)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  reporter          Profile          @relation(fields: [reporterProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([reporterProfileId, targetType, targetId])
+  @@index([targetType, targetId, createdAt])
+  @@index([status, createdAt])
+  @@index([reporterProfileId, createdAt])
+}

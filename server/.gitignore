@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build
+.env
+.env.production
+.DS_Store
+npm-debug.log
+.vscode
+
+google_secret.json
+llm.txt

@@ -1,0 +1,16 @@
+[Unit]
+Description=Proofline Pipeline Scheduler
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/proofline/server
+EnvironmentFile=/etc/proofline/server.env
+ExecStart=/bin/bash -lc 'export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"; nvm use 22 >/dev/null; corepack enable >/dev/null 2>&1 || true; pnpm pipeline:scheduler'
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target
