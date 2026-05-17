@@ -4,13 +4,19 @@
 
 @font-face {
 	font-family: 'arcade';
-	src: url('/fonts/arcadeclassic/ARCADECLASSIC.TTF');
-	/* src: url('/fonts/karmatic-arcade/ka1.ttf'); */
+	/* src: url('/fonts/arcadeclassic/ARCADECLASSIC.TTF'); */
+	src: url('/fonts/karmatic-arcade/ka1.ttf');
 }
 
 @font-face {
 	font-family: 'binary_soldiers';
 	src: url('/fonts/binary_soldiers/BinarySoldiers.ttf') format('truetype');
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'game_paused';
+	src: url('/fonts/game_paused/Game Paused DEMO.otf') format('opentype');
 	font-display: swap;
 }
 @custom-variant dark (&:is(.dark *));
@@ -128,6 +134,7 @@
 	--font-arcade: 'arcade', sans-serif;
 	--font-ps2p: 'Press Start 2P', sans-serif;
 	--font-binary_soldiers: 'binary_soldiers', sans-serif;
+	--font-game-paused: 'game_paused', sans-serif;
 }
 
 :root {

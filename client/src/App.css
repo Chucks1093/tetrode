@@ -6,7 +6,9 @@
 
 .noise {
 	background-image: url(/images/noise.png);
-	filter: invert(1);
+	background-repeat: repeat;
+	mix-blend-mode: overlay;
+	pointer-events: none;
 }
 
 .check {

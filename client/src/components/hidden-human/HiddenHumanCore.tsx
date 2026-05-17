@@ -185,7 +185,9 @@ export default function HiddenHumanCore({
 			await syncMessages(room.id, currentParticipant.id);
 			setMessagesError(null);
 		} catch (error) {
-			setMessages(prev => prev.filter(message => message.id !== optimisticId));
+			setMessages(prev =>
+				prev.filter(message => message.id !== optimisticId)
+			);
 			setMessagesError(
 				error instanceof Error ? error.message : 'Failed to send message.'
 			);
@@ -248,13 +250,16 @@ export default function HiddenHumanCore({
 			</div>
 
 			{/* ── Chat input ── */}
-			<div className="fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--surface-4)] bg-[color:var(--surface-0)]/94 pb-2 pt-4 backdrop-blur">
+			<div className="fixed inset-x-0 bottom-0 z-40  pb-2 pt-4 backdrop-blur">
 				<div className="mx-auto max-w-5xl px-4 sm:px-6">
 					<ChatInput
 						currentUser={{
-							name: currentParticipant?.displayName ?? playerIdentity.displayName,
+							name:
+								currentParticipant?.displayName ??
+								playerIdentity.displayName,
 							initials: initials(
-								currentParticipant?.displayName ?? playerIdentity.displayName
+								currentParticipant?.displayName ??
+									playerIdentity.displayName
 							),
 						}}
 						players={chatPlayers}
