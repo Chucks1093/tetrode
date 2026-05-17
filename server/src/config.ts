@@ -50,6 +50,9 @@ export const envSchema = z.object({
       .string()
       .min(1, 'PAYSTACK_PUBLIC_KEY is required for payment processing')
       .optional(),
+   OPENCODE_PROVIDER: z.string().default('aihubmix'),
+   OPENCODE_MODEL_ID: z.string().default('deep-deepseek-v4-flash'),
+   OPENCODE_BASE_URL: z.string().url().default('http://127.0.0.1:4096'),
 });
 
 export const envConfig = envSchema.parse(process.env);

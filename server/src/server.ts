@@ -1,5 +1,6 @@
 import app from './app';
 
+import { agentService } from './services/agent.service';
 import { envConfig } from './config';
 import { logger } from './utils/logger.utils';
 import { prisma } from './utils/prisma.utils';
@@ -8,6 +9,8 @@ async function startServer() {
    try {
       await prisma.$connect();
       logger.info('Connected to database');
+      const agentServerUrl = await agentService.startServer();
+      logger.info(`OpenCode server ready at ${agentServerUrl}`);
 
       app.listen(envConfig.PORT, () => {
          logger.info(`Server running on port ${envConfig.PORT}`);
@@ -31,6 +34,8 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 process.on('SIGINT', async () => {
+   await agentService.stopServer();
+   console.log('🤖 OpenCode server stopped');
    await prisma.$disconnect();
    console.log('💾 Database connection closed');
 

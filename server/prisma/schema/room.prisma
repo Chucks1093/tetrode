@@ -1,0 +1,38 @@
+enum RoomStatus {
+  WAITING
+  ACTIVE
+  FINISHED
+}
+
+enum ParticipantType {
+  HUMAN
+  AI
+}
+
+model Room {
+  id           String        @id @default(cuid())
+  publicId     String        @unique @default(uuid())
+  gameId       String
+  status       RoomStatus    @default(WAITING)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  participants Participant[]
+  messages     ChatMessage[]
+
+  @@index([gameId, status])
+}
+
+model Participant {
+  id          String          @id @default(cuid())
+  publicId    String          @unique @default(uuid())
+  roomId      String
+  type        ParticipantType
+  displayName String
+  actorId     String
+  joinedAt    DateTime        @default(now())
+  room        Room            @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  messages    ChatMessage[]
+
+  @@index([roomId])
+  @@index([actorId])
+}

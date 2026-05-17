@@ -1,0 +1,20 @@
+enum ChatSenderType {
+  HUMAN
+  AI
+  SYSTEM
+}
+
+model ChatMessage {
+  id                  String         @id @default(cuid())
+  publicId            String         @unique @default(uuid())
+  roomId              String
+  senderType          ChatSenderType
+  senderParticipantId String?
+  content             String
+  createdAt           DateTime       @default(now())
+  room                Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderParticipant   Participant?   @relation(fields: [senderParticipantId], references: [id], onDelete: SetNull)
+
+  @@index([roomId, createdAt])
+  @@index([senderParticipantId])
+}

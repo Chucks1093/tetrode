@@ -14,15 +14,12 @@
       "format:check": "prettier --check .",
       "lint": "eslint . --ext .js,.ts,.jsx,.tsx",
       "lint:fix": "eslint . --ext .js,.ts,.jsx,.tsx --fix",
-      "trends:fetch": "ts-node src/scripts/fetch-trends.ts",
-      "trends:research": "ts-node src/scripts/research-trends.ts",
-      "stories:generate": "ts-node src/scripts/generate-stories.ts",
+      "agent:test": "ts-node src/scripts/test-opencode-agent.ts",
       "comments:reply": "ts-node src/scripts/reply-comments.ts",
-      "pipeline:run": "pnpm trends:fetch && pnpm trends:research && pnpm stories:generate",
-      "pipeline:scheduler": "ts-node src/scripts/pipeline-scheduler.ts",
       "env:sync:production": "bash ./scripts/sync-prod-env.sh",
       "generate": "pnpm exec prisma generate",
       "migrate": "pnpm exec prisma migrate dev",
+      "games:seed": "ts-node src/scripts/seed-games.ts",
       "studio": "pnpm exec prisma studio",
       "validate-api": "tspec validate",
       "seed:reports": "ts-node src/scripts/seed-reports.ts",
@@ -33,6 +30,7 @@
    },
    "dependencies": {
       "@json2csv/node": "^7.0.6",
+      "@opencode-ai/sdk": "^1.15.0",
       "@prisma/client": "^6.19.1",
       "@types/js-yaml": "^4.0.9",
       "@types/pdfkit": "^0.17.3",
@@ -80,10 +78,12 @@
       "@types/text-to-svg": "^3.1.4",
       "@typescript-eslint/eslint-plugin": "^8.32.0",
       "@typescript-eslint/parser": "^8.32.0",
+      "esbuild": "^0.28.0",
       "eslint": "^9.26.0",
       "nodemon": "^3.1.10",
       "prettier": "^3.6.2",
       "ts-node": "^10.9.2",
+      "tsx": "^4.20.6",
       "typescript": "^5.8.3"
    }
 }

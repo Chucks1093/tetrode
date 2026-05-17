@@ -1,0 +1,21 @@
+enum GameStatus {
+  ACTIVE
+  COMING_SOON
+}
+
+model Game {
+  id             String     @id @default(cuid())
+  publicId       String     @unique
+  title          String
+  description    String
+  status         GameStatus
+  imageUrl       String
+  maxPlayers     Int
+  maxAgents      Int
+  maxActiveRooms Int
+  entryFee       Decimal    @db.Decimal(10, 2)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([status, createdAt])
+}

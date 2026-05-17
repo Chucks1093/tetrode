@@ -1,31 +1,22 @@
 import { Bot, MoveRight } from 'lucide-react';
 import { Link } from 'react-router';
+import type { Game } from '../../services/game.service';
 
-type GameStatus = 'active' | 'coming_soon';
-
-export interface GameCardProps {
-	gameId: string;
-	title: string;
-	description: string;
-	status: GameStatus;
-	imageUrl: string;
-	depositUSDC: number;
-	agents: number;
-}
+export type GameCardProps = Game;
 
 export default function GameCard(props: GameCardProps) {
-	const isComingSoon = props.status === 'coming_soon';
+	const isComingSoon = props.status === 'COMING_SOON';
 
 	return (
 		<article
-			className={`rounded-3xl border p-2 overflow-hidden shadow-sm transition-all relative ${
+			className={`relative overflow-hidden rounded-3xl border p-2 shadow-sm transition-all ${
 				isComingSoon
-					? 'border-odin-dark-500 bg-odin-dark-300/70'
-					: 'border-odin-dark-500 bg-odin-dark-300 hover:bg-odin-dark-400/80 hover:shadow-md'
+					? 'border-odin-dark-500 bg-odin-dark-300/80 cursor-not-allowed select-none'
+					: 'border-odin-dark-500 bg-odin-dark-300 hover:shadow-md'
 			}`}
 		>
 			<div
-				className={`h-[12rem] sm:h-[14rem] relative overflow-hidden rounded-3xl ${
+				className={`relative h-[12rem] overflow-hidden rounded-3xl sm:h-[14rem] ${
 					isComingSoon ? 'grayscale' : ''
 				}`}
 			>
@@ -35,26 +26,26 @@ export default function GameCard(props: GameCardProps) {
 					className="w-full h-full object-cover brightness-90"
 				/>
 				<span
-					className={`absolute right-3 top-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium border backdrop-blur-sm ${
+					className={`absolute right-3 top-3 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium backdrop-blur-sm ${
 						isComingSoon
-							? 'bg-odin-dark-200/90 text-odin-dark-1000-a-65 border-odin-dark-500'
-							: 'bg-odin-dark-200/95 text-orange-400 border-odin-dark-500'
+							? 'border-odin-dark-500 bg-black/80 text-odin-dark-1000-a-65'
+							: 'border-orange-500/30 bg-black/85 text-orange-400'
 					}`}
 				>
 					<span
 						className={`size-2 rounded-full ${
 							isComingSoon
-								? 'bg-odin-dark-700'
-								: 'bg-orange-500 animate-pulse'
+								? 'bg-odin-dark-1000-a-65'
+								: 'animate-pulse bg-orange-400'
 						}`}
 					/>
 					{isComingSoon ? 'Coming Soon' : 'Live'}
 				</span>
 			</div>
 
-			<div className="p-4">
+			<div className="relative p-4">
 				<h3
-					className={`text-xl font-bold font-manrope mb-2 line-clamp-2 ${
+					className={`mb-3 overflow-hidden line-clamp-2 text-xl font-manrope font-semibold ${
 						isComingSoon
 							? 'text-odin-dark-1000-a-65'
 							: 'text-odin-dark-1000'
@@ -64,26 +55,24 @@ export default function GameCard(props: GameCardProps) {
 				</h3>
 
 				<p
-					className={`text-sm line-clamp-2 ${
-						isComingSoon
-							? 'text-odin-dark-1000-a-50'
-							: 'text-odin-dark-1000-a-65'
+					className={`line-clamp-2 text-sm text-odin-dark-1000-a-65 ${
+						isComingSoon ? 'opacity-75' : ''
 					}`}
 				>
 					{props.description}
 				</p>
 
-				<div className="border-t-2 mt-4 py-2 border-odin-dark-500 border-dashed flex items-center justify-between">
+				<div className="mt-4 flex items-center justify-between border-t-2 border-dashed border-odin-dark-500 py-2">
 					<div className="flex items-center gap-2 py-2">
 						<img src="/icons/trophy.svg" className="size-5" alt="coin" />
 						<p
-							className={`font-manrope font-semibold text-sm ${
+							className={`font-manrope text-sm font-bold ${
 								isComingSoon
 									? 'text-odin-dark-1000-a-50'
 									: 'text-odin-dark-1000-a-65'
 							}`}
 						>
-							{props.depositUSDC} USDC
+							{props.entryFee} USDC
 						</p>
 					</div>
 					<div className="flex items-center gap-1 py-2">
@@ -95,19 +84,19 @@ export default function GameCard(props: GameCardProps) {
 							}`}
 						/>
 						<p
-							className={`font-manrope font-semibold text-sm ${
+							className={`font-manrope text-sm font-bold ${
 								isComingSoon
 									? 'text-odin-dark-1000-a-50'
 									: 'text-odin-dark-1000-a-65'
 							}`}
 						>
-							{props.agents} Agents
+							{props.maxAgents} Agents
 						</p>
 					</div>
 				</div>
 
 				<Link
-					to={`/${props.gameId}`}
+					to={`/${props.id}`}
 					aria-disabled={isComingSoon}
 					className={`mt-3 text-white font-semibold font-jakarta px-4 py-2.5 rounded-lg transition-colors duration-200 outline-none ring-2 ring-offset-2 ring-offset-odin-dark-300 w-full flex items-center gap-2 justify-center ${
 						isComingSoon
@@ -116,7 +105,7 @@ export default function GameCard(props: GameCardProps) {
 					}`}
 				>
 					{isComingSoon ? 'Coming Soon' : 'Play Now'}{' '}
-					<MoveRight className="size-4" />
+					{isComingSoon ? null : <MoveRight className="size-5" />}
 				</Link>
 			</div>
 		</article>

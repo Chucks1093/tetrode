@@ -1,33 +1,28 @@
+import { LogIn } from 'lucide-react';
 import { Link } from 'react-router';
 
 export default function Header() {
 	return (
-		<header className="fixed inset-x-0 top-0 z-50 border-b border-odin-dark-500 bg-odin-dark-200/90 backdrop-blur">
+		<header className="fixed inset-x-0 top-0 z-50 border-b border-surface-3 bg-surface-0/90 backdrop-blur">
 			<div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
 				<Link
 					to="/"
-					className="font-ps2p text-sm uppercase text-orange-500"
+					className="font-ps2p text-sm uppercase text-gold-base"
 				>
 					tetrode
 				</Link>
 
-				<nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-8 text-xs text-odin-dark-1000-a-65 md:flex">
-					<Link
-						className="uppercase tracking-widest hover:text-odin-dark-1000"
-						to="/about"
-					>
-						About
-					</Link>
+				<nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-8 text-xs text-text-muted md:flex">
 					<a
-						className="uppercase tracking-widest hover:text-odin-dark-1000"
+						className="uppercase tracking-widest transition-colors hover:text-text-primary"
 						href="#"
 						target="_blank"
 						rel="noreferrer"
 					>
-						Moltbook
+						Leaderboard
 					</a>
 					<a
-						className="uppercase tracking-widest hover:text-odin-dark-1000"
+						className="uppercase tracking-widest transition-colors hover:text-text-primary"
 						href="#"
 						target="_blank"
 						rel="noreferrer"
@@ -35,20 +30,29 @@ export default function Header() {
 						Twitter
 					</a>
 					<a
-						className="uppercase tracking-widest hover:text-odin-dark-1000"
+						className="uppercase tracking-widest transition-colors hover:text-text-primary"
 						href="#"
 						target="_blank"
 						rel="noreferrer"
 					>
 						Community
 					</a>
+					<a
+						className="uppercase tracking-widest transition-colors hover:text-text-primary"
+						href="#"
+						target="_blank"
+						rel="noreferrer"
+					>
+						About
+					</a>
 				</nav>
 
 				<div className="flex items-center gap-2">
 					<Link
 						to="/auth/register"
-						className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+						className="flex items-center gap-2 rounded-sm border border-gold-base/40 bg-gold-base/10 px-4 py-2 font-ps2p text-[9px] uppercase tracking-wider text-gold-base transition-all hover:border-gold-base hover:bg-gold-base hover:text-surface-0"
 					>
+						<LogIn className="size-3.5" />
 						Register
 					</Link>
 				</div>

@@ -1,66 +1,58 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import GameCard from '../components/landing/GameCard';
+import GameCardSkeleton from '../components/landing/GameCardSkeleton';
 import Footer from '../components/shared/Footer';
 import Header from '../components/shared/Header';
-
-const games = [
-	{
-		gameId: 'the-hidden-human',
-		title: 'The Hidden Human',
-		description:
-			'All players appear to be AI agents, but one is secretly human and must survive suspicion.',
-		status: 'active' as const,
-		imageUrl: '/images/games/game-1.jpeg',
-		depositUSDC: 0.63,
-		agents: 8,
-	},
-	{
-		gameId: 'hunt-the-ai',
-		title: 'Hunt The AI',
-		description:
-			'Players interrogate, accuse, and vote to expose the hidden AI before time runs out.',
-		status: 'coming_soon' as const,
-		imageUrl: '/images/games/game-2.jpeg',
-		depositUSDC: 0.5,
-		agents: 10,
-	},
-	{
-		gameId: 'mind-match',
-		title: 'Mind Match',
-		description:
-			'Humans collaborate with AI using clues to align interpretation and guess hidden words.',
-		status: 'coming_soon' as const,
-		imageUrl: '/images/games/game-3.jpeg',
-		depositUSDC: 0.4,
-		agents: 6,
-	},
-	{
-		gameId: 'mindflip',
-		title: 'MindFlip',
-		description:
-			'Secret choices, pattern reading, and bluffing create layered social prediction battles.',
-		status: 'coming_soon' as const,
-		imageUrl: '/images/games/game-4.jpeg',
-		depositUSDC: 0.25,
-		agents: 7,
-	},
-];
+import { gameService, type Game } from '../services/game.service';
 
 const categories = ['All', 'Upcoming', 'Active'] as const;
 type Category = (typeof categories)[number];
 
 export default function LandingPage() {
 	const [activeCategory, setActiveCategory] = useState<Category>('All');
+	const [games, setGames] = useState<Game[]>([]);
+	const [isLoadingGames, setIsLoadingGames] = useState(true);
+	const [gamesError, setGamesError] = useState<string | null>(null);
+
+	useEffect(() => {
+		let isMounted = true;
+
+		async function loadGames() {
+			try {
+				setIsLoadingGames(true);
+				const nextGames = await gameService.fetchGames();
+				if (!isMounted) return;
+				setGames(nextGames);
+				setGamesError(null);
+			} catch (error) {
+				if (!isMounted) return;
+				setGames([]);
+				setGamesError(
+					error instanceof Error ? error.message : 'Failed to load games.'
+				);
+			} finally {
+				if (isMounted) {
+					setIsLoadingGames(false);
+				}
+			}
+		}
+
+		void loadGames();
+
+		return () => {
+			isMounted = false;
+		};
+	}, []);
 
 	const filteredGames = useMemo(
 		() =>
 			games.filter(game => {
 				if (activeCategory === 'All') return true;
 				if (activeCategory === 'Upcoming')
-					return game.status === 'coming_soon';
-				return game.status === 'active';
+					return game.status === 'COMING_SOON';
+				return game.status === 'ACTIVE';
 			}),
-		[activeCategory]
+		[activeCategory, games]
 	);
 
 	return (
@@ -72,26 +64,26 @@ export default function LandingPage() {
 						<h2 className="text-3xl font-binary_soldiers text-orange-500">
 							SAGP
 						</h2>
-						<h2 className="mt-3 text-2xl [word-spacing:-0.4em]  md:text-4xl leading-relaxed font-ps2p uppercase text-gray-200">
+						<h2 className="mt-3 text-2xl [word-spacing:-0.4em] md:text-4xl leading-relaxed font-ps2p uppercase text-odin-light-500">
 							Prove You Can Outsmart AI
 						</h2>
-						<p className="mt-5 max-w-3xl text-base md:text-lg leading-8 text-odin-dark-1000-a-65">
+						<p className="mt-5 max-w-3xl text-base leading-8 text-odin-dark-1000-a-65 md:text-lg">
 							Enter the world where humans face AI in live mind games,
 							and prove whether natural intelligence can overcome
 							artificial intelligence.
 						</p>
 					</div>
 
-					<div className="mt-14 mx-auto flex w-fit flex-wrap gap-3 rounded-xl border border-odin-dark-500 bg-odin-dark-300 p-1.5">
+					<div className="mx-auto mt-14 flex w-fit flex-wrap gap-3 rounded-xl border border-odin-dark-500 bg-odin-dark-300 p-1.5">
 						{categories.map(category => (
 							<button
 								key={category}
 								type="button"
 								onClick={() => setActiveCategory(category)}
-								className={`px-6 py-2 rounded-lg text-sm border transition-all font-inter ${
+								className={`rounded-lg border px-6 py-2 text-sm transition-all font-inter ${
 									activeCategory === category
-										? 'bg-odin-dark-600 text-odin-dark-1000 border-odin-dark-500'
-										: 'bg-odin-dark-300 text-odin-dark-1000-a-65 border-odin-dark-500 hover:bg-odin-dark-400'
+										? 'border-orange-500/30 bg-orange-500/15 text-orange-400'
+										: 'border-odin-dark-500 bg-odin-dark-300 text-odin-dark-1000-a-65 hover:bg-odin-dark-400'
 								}`}
 							>
 								{category}
@@ -100,10 +92,18 @@ export default function LandingPage() {
 					</div>
 
 					<section className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-						{filteredGames.map(game => (
-							<GameCard key={game.title} {...game} />
-						))}
+						{isLoadingGames
+							? Array.from({ length: 4 }).map((_, index) => (
+									<GameCardSkeleton key={index} />
+								))
+							: filteredGames.map(game => (
+									<GameCard key={game.id} {...game} />
+								))}
 					</section>
+
+					{!isLoadingGames && gamesError ? (
+						<p className="mt-5 text-sm text-red-400">{gamesError}</p>
+					) : null}
 
 					<Footer />
 				</main>
