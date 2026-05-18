@@ -95,7 +95,7 @@ export class BaseApiService {
 					} catch (refreshError) {
 						// Refresh failed - clear auth and redirect
 						this.clearAuth();
-						window.location.href = '/login';
+						window.location.href = '/auth/signin';
 						return Promise.reject(refreshError);
 					}
 				}
@@ -116,7 +116,7 @@ export class BaseApiService {
 							this.REDIRECT_AFTER_LOGIN_KEY,
 							currentPath
 						);
-						window.location.href = `/auth/login?redirect=${encodeURIComponent(
+						window.location.href = `/auth/signin?redirect=${encodeURIComponent(
 							currentPath
 						)}`;
 					}

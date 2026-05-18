@@ -209,17 +209,17 @@ export default function HiddenHumanCore({
 
 	return (
 		<section className="flex min-h-screen flex-col gap-3 pb-20">
-			<header className="fixed inset-x-0 top-0 z-40 border-b border-[color:var(--surface-4)] bg-[color:var(--surface-1)]/92 backdrop-blur">
+			<header className="fixed inset-x-0 top-0 z-40 border-b border-surface-3 bg-surface-1/90 backdrop-blur">
 				<div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-					<p className="font-ps2p text-sm uppercase text-[var(--accent-bright)]">
+					<p className="font-ps2p text-sm uppercase text-gold-base">
 						The Hidden Human
 					</p>
 
-					<div className="flex items-center gap-6 text-xs text-[var(--text-secondary)]">
-						<p className="uppercase tracking-widest text-[var(--text-muted)]">
+					<div className="flex items-center gap-6 text-xs">
+						<p className="uppercase tracking-widest text-text-muted">
 							{PHASE.label}
 						</p>
-						<p className="uppercase tracking-widest text-[var(--text-muted)]">
+						<p className="uppercase tracking-widest text-text-muted">
 							{room
 								? `Room ${room.id.slice(0, 8)}`
 								: `Round ${PHASE.round}/${PHASE.total}`}
@@ -228,8 +228,8 @@ export default function HiddenHumanCore({
 							className={cn(
 								'font-ps2p text-sm tabular-nums',
 								timer <= 30
-									? 'animate-pulse text-red-500'
-									: 'text-[var(--accent-bright)]'
+									? 'animate-pulse text-terracotta-bright'
+									: 'text-gold-base'
 							)}
 						>
 							{fmtTimer(timer)}

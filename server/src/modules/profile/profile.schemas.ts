@@ -23,40 +23,12 @@ export const ProfileUpdateSchema = z.object({
    name: z.string().min(2, 'Name must be at least 2 characters').optional(),
    avatarUrl: z.string().url('Invalid avatar URL').optional(),
 });
-
-
-const onboardingInterestValues = [
-   'world',
-   'politics',
-   'business',
-   'tech',
-   'global',
-   'sports',
-   'finance',
-   'ai',
-   'science',
-   'health',
-   'climate',
-   'energy',
-   'crypto',
-   'security',
-   'startup',
-   'media',
-   'culture',
-   'education',
-   'travel',
-   'africa',
-   'europe',
-   'americas',
-] as const;
-
-export const ProfileOnboardingSchema = z.object({
-   avatarUrl: z.string().min(1, 'Avatar is required'),
-   interests: z
-      .array(z.enum(onboardingInterestValues))
-      .min(1, 'Select at least one interest'),
+export const ProfileWalletSchema = z.object({
+   walletAddress: z
+      .string()
+      .min(1, 'Wallet address is required')
+      .trim(),
 });
-
 
 export const ForgotPasswordSchema = z.object({
    email: z.string().email('Invalid email address'),
@@ -97,7 +69,7 @@ export const ResendVerificationSchema = z.object({
 export type ProfileRegisterInput = z.infer<typeof ProfileRegisterSchema>;
 export type ProfileLoginInput = z.infer<typeof ProfileLoginSchema>;
 export type ProfileUpdateInput = z.infer<typeof ProfileUpdateSchema>;
-export type ProfileOnboardingInput = z.infer<typeof ProfileOnboardingSchema>;
+export type ProfileWalletInput = z.infer<typeof ProfileWalletSchema>;
 export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;
 export type VerifyEmailInput = z.infer<typeof VerifyEmailSchema>;

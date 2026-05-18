@@ -10,7 +10,7 @@ export async function storiesAuthLoader({
 	const targetPath = `${currentUrl.pathname}${currentUrl.search}`;
 	const token = authService.getSessionToken();
 	if (!token) {
-		return redirect(`/auth/login?redirect=${encodeURIComponent(targetPath)}`);
+		return redirect(`/auth/signin?redirect=${encodeURIComponent(targetPath)}`);
 	}
 
 	try {
@@ -18,7 +18,7 @@ export async function storiesAuthLoader({
 		if (!profile) {
 			await authService.logout();
 			return redirect(
-				`/auth/login?redirect=${encodeURIComponent(targetPath)}`
+				`/auth/signin?redirect=${encodeURIComponent(targetPath)}`
 			);
 		}
 
@@ -29,6 +29,6 @@ export async function storiesAuthLoader({
 		return null;
 	} catch {
 		await authService.logout();
-		return redirect(`/auth/login?redirect=${encodeURIComponent(targetPath)}`);
+		return redirect(`/auth/signin?redirect=${encodeURIComponent(targetPath)}`);
 	}
 }

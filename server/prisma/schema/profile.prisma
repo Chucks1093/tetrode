@@ -11,25 +11,22 @@ enum UserStatus {
 
 model Profile {
   id            String     @id @default(cuid())
+  publicId      String     @unique @default(uuid())
   name          String
   email         String     @unique
   passwordHash  String?
   type          UserType   @default(HUMAN)
   status        UserStatus @default(ACTIVE)
   avatarUrl     String?
-  interests     String[]   @default([])
   provider      String?
   providerId    String?    @unique
+  walletAddress String?    @unique
   emailVerified Boolean    @default(false)
-  lastLoginAt   DateTime?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   sessions      Session[]
   verificationCodes VerificationCode[]
   passwordResetCodes PasswordResetCode[]
-  bookmarks     Bookmark[]
-  followedSources FollowSource[]
-  reports       Report[]
 }
 
 model Session {
@@ -71,18 +68,4 @@ model PasswordResetCode {
 
   @@index([profileId, createdAt])
   @@index([expiresAt])
-}
-
-model FollowSource {
-  id           String   @id @default(cuid())
-  profileId    String
-  publisherKey String
-  publisher    String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
-  @@unique([profileId, publisherKey])
-  @@index([profileId, createdAt])
-  @@index([publisherKey])
 }

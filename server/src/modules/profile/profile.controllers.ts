@@ -11,7 +11,8 @@ import {
    ProfileLoginSchema,
    ProfileRegisterSchema,
    ForgotPasswordSchema,
-   ProfileOnboardingSchema,
+   ProfileUpdateSchema,
+   ProfileWalletSchema,
    ResendVerificationSchema,
    ResetPasswordSchema,
    VerifyEmailSchema,
@@ -29,7 +30,8 @@ import {
    markPasswordResetCodeUsed,
    markProfileEmailVerified,
    markVerificationCodeUsed,
-   updateProfileOnboarding,
+   updateProfileDetails,
+   updateProfileWalletAddress,
    updateProfilePassword,
    verifyUserPassword,
 } from './profile.utils';
@@ -48,24 +50,25 @@ const buildGoogleClient = (): OAuth2Client => {
 
 const toSafeProfile = (profile: {
    id: string;
+   publicId?: string | null;
    email: string;
    name: string;
    type: 'HUMAN' | 'AGENT';
    status: 'ACTIVE' | 'SUSPENDED' | 'DELETED';
    emailVerified: boolean;
-   avatarUrl: string | null;
-   provider: string | null;
-   interests: string[];
+   avatarUrl?: string | null;
+   provider?: string | null;
+   walletAddress?: string | null;
    createdAt: Date;
 }) => ({
-   id: profile.id,
+   id: profile.publicId ?? profile.id,
    name: profile.name,
    email: profile.email,
    type: profile.type,
    status: profile.status,
    avatarUrl: profile.avatarUrl ?? undefined,
    provider: profile.provider ?? undefined,
-   interests: profile.interests,
+   walletAddress: profile.walletAddress ?? undefined,
    emailVerified: profile.emailVerified,
    createdAt: profile.createdAt,
 });
@@ -76,12 +79,12 @@ const generateVerificationCode = () =>
 const sendVerificationCodeEmail = (email: string, code: string) => {
    SendMailAsync({
       to: email,
-      subject: 'Verify your Proofline email',
-      text: `Your Proofline verification code is ${code}. It expires in 10 minutes.`,
+      subject: 'Verify your Tetrode email',
+      text: `Your Tetrode verification code is ${code}. It expires in 10 minutes.`,
       html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.5;">
         <h2>Verify your email</h2>
-        <p>Your Proofline verification code is:</p>
+        <p>Your Tetrode verification code is:</p>
         <p style="font-size: 28px; font-weight: 700; letter-spacing: 6px;">${code}</p>
         <p>This code expires in 10 minutes.</p>
       </div>
@@ -260,6 +263,36 @@ export const httpProfileMe: AsyncController = async (req, res, next) => {
    }
 };
 
+export const httpProfileUpdate: AsyncController = async (req, res, next) => {
+   try {
+      if (!req.currentProfile) {
+         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+            success: false,
+            message: 'Authentication required',
+            data: null,
+         });
+      }
+
+      const validated = ProfileUpdateSchema.parse(req.body);
+
+      const updatedProfile = await updateProfileDetails({
+         profileId: req.currentProfile.id,
+         name: validated.name,
+         avatarUrl: validated.avatarUrl,
+      });
+
+      return res.status(HTTP_STATUS.OK).json({
+         success: true,
+         message: 'Profile updated successfully',
+         data: {
+            profile: toSafeProfile(updatedProfile),
+         },
+      });
+   } catch (error) {
+      next(error);
+   }
+};
+
 export const httpProfileGoogleStart: AsyncController = async (
    _req,
    res,
@@ -290,7 +323,7 @@ export const httpProfileGoogleCallback: AsyncController = async (
 
       if (!code) {
          return res.redirect(
-            `${envConfig.FRONTEND_URL}/auth/google/callback?success=false&message=${encodeURIComponent(
+            `${envConfig.FRONTEND_URL}/auth/callback?success=false&message=${encodeURIComponent(
                'Missing Google authorization code'
             )}`
          );
@@ -301,7 +334,7 @@ export const httpProfileGoogleCallback: AsyncController = async (
 
       if (!tokens.access_token) {
          return res.redirect(
-            `${envConfig.FRONTEND_URL}/auth/google/callback?success=false&message=${encodeURIComponent(
+            `${envConfig.FRONTEND_URL}/auth/callback?success=false&message=${encodeURIComponent(
                'Google token missing'
             )}`
          );
@@ -318,7 +351,7 @@ export const httpProfileGoogleCallback: AsyncController = async (
 
       if (!profileResponse.ok) {
          return res.redirect(
-            `${envConfig.FRONTEND_URL}/auth/google/callback?success=false&message=${encodeURIComponent(
+            `${envConfig.FRONTEND_URL}/auth/callback?success=false&message=${encodeURIComponent(
                'Unable to fetch Google profile'
             )}`
          );
@@ -333,7 +366,7 @@ export const httpProfileGoogleCallback: AsyncController = async (
 
       if (!googleProfile.email || !googleProfile.name || !googleProfile.id) {
          return res.redirect(
-            `${envConfig.FRONTEND_URL}/auth/google/callback?success=false&message=${encodeURIComponent(
+            `${envConfig.FRONTEND_URL}/auth/callback?success=false&message=${encodeURIComponent(
                'Google profile is missing required fields'
             )}`
          );
@@ -343,14 +376,14 @@ export const httpProfileGoogleCallback: AsyncController = async (
       let user = await findUserByEmail(email);
 
       if (!user) {
-         const generatedPassword = crypto.randomUUID();
-         const passwordHash = await bcrypt.hash(generatedPassword, 12);
-         user = await createGoogleUser({
-            email,
-            name: googleProfile.name,
-            passwordHash,
-            providerId: googleProfile.id,
-            avatar: googleProfile.picture,
+        const generatedPassword = crypto.randomUUID();
+        const passwordHash = await bcrypt.hash(generatedPassword, 12);
+        user = await createGoogleUser({
+           email,
+           name: googleProfile.name,
+           passwordHash,
+           providerId: googleProfile.id,
+           avatar: googleProfile.picture,
          });
       } else if (!user.emailVerified) {
          user = await markProfileEmailVerified(user.id);
@@ -365,7 +398,7 @@ export const httpProfileGoogleCallback: AsyncController = async (
       });
 
       return res.redirect(
-         `${envConfig.FRONTEND_URL}/auth/google/callback?${redirectQuery.toString()}`
+         `${envConfig.FRONTEND_URL}/auth/callback?${redirectQuery.toString()}`
       );
    } catch (error) {
       next(error);
@@ -464,7 +497,7 @@ export const httpProfileResendVerification: AsyncController = async (
 };
 
 
-export const httpProfileCompleteOnboarding: AsyncController = async (
+export const httpProfileUpdateWallet: AsyncController = async (
    req,
    res,
    next
@@ -478,17 +511,16 @@ export const httpProfileCompleteOnboarding: AsyncController = async (
          });
       }
 
-      const validated = ProfileOnboardingSchema.parse(req.body);
+      const validated = ProfileWalletSchema.parse(req.body);
 
-      const updatedProfile = await updateProfileOnboarding({
+      const updatedProfile = await updateProfileWalletAddress({
          profileId: req.currentProfile.id,
-         avatarUrl: validated.avatarUrl,
-         interests: validated.interests,
+         walletAddress: validated.walletAddress,
       });
 
       return res.status(HTTP_STATUS.OK).json({
          success: true,
-         message: 'Onboarding profile updated',
+         message: 'Wallet updated successfully',
          data: {
             profile: toSafeProfile(updatedProfile),
          },
@@ -527,12 +559,12 @@ export const httpProfileForgotPassword: AsyncController = async (
 
       SendMailAsync({
          to: email,
-         subject: 'Reset your Proofline password',
-         text: `Your password reset code is ${code}. It expires in 10 minutes.`,
+         subject: 'Reset your Tetrode password',
+         text: `Your Tetrode reset code is ${code}. It expires in 10 minutes.`,
          html: `
          <div style="font-family: Arial, sans-serif; line-height: 1.5;">
            <h2>Reset your password</h2>
-           <p>Your Proofline reset code is:</p>
+           <p>Your Tetrode reset code is:</p>
            <p style="font-size: 28px; font-weight: 700; letter-spacing: 6px;">${code}</p>
            <p>This code expires in 10 minutes.</p>
          </div>

@@ -1,13 +1,7 @@
-// src/services/auth.service.ts
+import { env } from '@/utils/env.utils';
 import { BaseApiService, type APIResponse } from './api.service';
 
 type AuthSubscriber = () => void;
-
-type PrivyAdapter = {
-	login: () => Promise<void>;
-	logout: () => Promise<void>;
-	getAccessToken: () => Promise<string | null>;
-};
 
 export interface User {
 	id: string;
@@ -18,6 +12,7 @@ export interface User {
 	emailVerified: boolean;
 	avatarUrl?: string;
 	provider?: string;
+	walletAddress?: string;
 	interests?: string[];
 	createdAt: string;
 }
@@ -35,6 +30,11 @@ interface RegisterData {
 	type?: 'HUMAN' | 'AGENT';
 }
 
+interface UpdateProfileData {
+	name?: string;
+	avatarUrl?: string;
+}
+
 export interface LoginData {
 	email: string;
 	password: string;
@@ -43,9 +43,6 @@ export interface LoginData {
 class AuthService extends BaseApiService {
 	private USER_PROFILE_KEY = 'proofline_user';
 	private SESSION_TOKEN_KEY = 'proofline_session_token';
-	private privyReady = false;
-	private privyAuthenticated = false;
-	private privyAdapter: PrivyAdapter | null = null;
 	private subscribers = new Set<AuthSubscriber>();
 
 	private setSessionToken(token?: string): void {
@@ -66,124 +63,8 @@ class AuthService extends BaseApiService {
 		};
 	}
 
-	isReady(): boolean {
-		return this.privyReady;
-	}
-
-	setPrivyAdapter(adapter: PrivyAdapter): void {
-		this.privyAdapter = adapter;
-	}
-
-	clearPrivyAdapter(): void {
-		this.privyAdapter = null;
-	}
-
-	async startPrivyLogin(): Promise<void> {
-		if (!this.privyAdapter) {
-			throw new ApiError(
-				'Privy is not initialized. Check your frontend env and provider setup.',
-				500
-			);
-		}
-
-		await this.privyAdapter.login();
-	}
-
-	async syncPrivySession(input: {
-		ready: boolean;
-		authenticated: boolean;
-		user: unknown;
-		accessToken: string | null;
-	}): Promise<void> {
-		this.privyReady = input.ready;
-		this.privyAuthenticated = input.authenticated;
-
-		if (!input.authenticated) {
-			this.clearAuth();
-			this.notify();
-			return;
-		}
-
-		const mappedUser = this.mapPrivyUser(input.user);
-		if (mappedUser) {
-			this.setUser(mappedUser);
-		}
-
-		if (input.accessToken) {
-			this.setSessionToken(input.accessToken);
-		}
-
-		this.notify();
-	}
-
-	private mapPrivyUser(user: unknown): User | null {
-		if (!user || typeof user !== 'object') {
-			return null;
-		}
-
-		const candidate = user as Record<string, unknown>;
-		const id = typeof candidate.id === 'string' ? candidate.id : '';
-		const createdAt =
-			typeof candidate.createdAt === 'string'
-				? candidate.createdAt
-				: new Date().toISOString();
-
-		const linkedAccounts = Array.isArray(candidate.linkedAccounts)
-			? candidate.linkedAccounts
-			: [];
-
-		let name = '';
-		let email = '';
-		let avatarUrl: string | undefined;
-
-		for (const account of linkedAccounts) {
-			if (!account || typeof account !== 'object') continue;
-			const linked = account as Record<string, unknown>;
-
-			if (!name && typeof linked.name === 'string') {
-				name = linked.name.trim();
-			}
-
-			if (!email && typeof linked.email === 'string') {
-				email = linked.email.trim();
-			}
-
-			if (!avatarUrl && typeof linked.avatarUrl === 'string') {
-				avatarUrl = linked.avatarUrl;
-			}
-
-			if (
-				!avatarUrl &&
-				typeof linked.profilePictureUrl === 'string'
-			) {
-				avatarUrl = linked.profilePictureUrl;
-			}
-		}
-
-		if (!name && email) {
-			name = email.split('@')[0] ?? 'Player';
-		}
-
-		if (!name) {
-			name = 'Player';
-		}
-
-		if (!id) {
-			return null;
-		}
-
-		return {
-			id,
-			name,
-			email,
-			type: 'HUMAN',
-			status: 'ACTIVE',
-			emailVerified: Boolean(email),
-			avatarUrl,
-			provider: 'privy',
-			interests: [],
-			createdAt,
-		};
+	startGoogleAuth(): void {
+		window.location.href = `${env.VITE_BACKEND_URL}/profile/google`;
 	}
 
 	getSessionToken(): string | null {
@@ -238,21 +119,39 @@ class AuthService extends BaseApiService {
 		}
 	}
 
+	async updateProfile(input: UpdateProfileData): Promise<User> {
+		try {
+			const response = await this.api.patch<
+				APIResponse<{ profile: User }>
+			>('/profile', input);
+			const profile = response.data.data.profile;
+			this.setUser(profile);
+			this.notify();
+			return profile;
+		} catch (error) {
+			throw this.handleError(error);
+		}
+	}
 
 	async completeOnboarding(input: {
 		avatarUrl: string;
 		interests: string[];
 	}): Promise<User> {
-		try {
-			const response = await this.api.patch<
-				APIResponse<{ profile: User }>
-			>('/profile/onboarding', input);
-			const profile = response.data.data.profile;
-			this.setUser(profile);
-			return profile;
-		} catch (error) {
-			throw this.handleError(error);
+		const existingUser = this.getUser();
+
+		if (!existingUser) {
+			throw new Error('No active profile found');
 		}
+
+		const updatedUser: User = {
+			...existingUser,
+			avatarUrl: input.avatarUrl,
+			interests: input.interests,
+		};
+
+		this.setUser(updatedUser);
+		this.notify();
+		return updatedUser;
 	}
 
 
@@ -288,16 +187,11 @@ class AuthService extends BaseApiService {
 	// Logout - POST /profile/logout
 	async logout(): Promise<void> {
 		try {
-			if (this.privyAdapter) {
-				await this.privyAdapter.logout();
-			} else {
-				await this.api.post('/profile/logout');
-			}
+			await this.api.post('/profile/logout');
 		} catch (error) {
 			console.error('Logout error:', error);
 		} finally {
 			this.clearAuth();
-			this.privyAuthenticated = false;
 			this.notify();
 		}
 	}
@@ -348,7 +242,7 @@ class AuthService extends BaseApiService {
 	}
 
 	isAuthenticated(): boolean {
-		return (!!this.getUser() && !!this.getSessionToken()) || this.privyAuthenticated;
+		return !!this.getUser() && !!this.getSessionToken();
 	}
 
 	handleOAuthCallback(params: URLSearchParams): {

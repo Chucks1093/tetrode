@@ -45,10 +45,14 @@ export class AuthService {
             profile: {
                select: {
                   id: true,
+                  publicId: true,
+                  email: true,
                   name: true,
                   type: true,
                   status: true,
                   avatarUrl: true,
+                  provider: true,
+                  walletAddress: true,
                   emailVerified: true,
                },
             },

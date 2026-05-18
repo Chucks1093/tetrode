@@ -17,10 +17,6 @@ import {
 } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 
-/* ------------------------------------------------------------------ */
-/* Types (exported for consumers)                                       */
-/* ------------------------------------------------------------------ */
-
 export interface ChatPlayer {
 	id: string;
 	name: string;
@@ -30,18 +26,12 @@ export interface ChatPlayer {
 
 interface ChatInputProps {
 	currentUser?: { name: string; initials: string; avatarUrl?: string };
-	/** Players eligible to be flagged or mentioned */
 	players?: ChatPlayer[];
 	onSend?: (message: string) => void;
-	/** Called when the user selects a player from the suspicion popover */
 	onRaiseSuspicion?: (player: ChatPlayer) => void;
 	placeholder?: string;
 	disabled?: boolean;
 }
-
-/* ------------------------------------------------------------------ */
-/* Component                                                            */
-/* ------------------------------------------------------------------ */
 
 export function ChatInput({
 	currentUser = { name: 'You', initials: 'YO' },
@@ -56,7 +46,6 @@ export function ChatInput({
 
 	const canSend = value.trim().length > 0 && !disabled;
 
-	/* Select a player to flag — does NOT insert text, fires callback */
 	const handleSelectPlayer = (player: ChatPlayer) => {
 		onRaiseSuspicion?.(player);
 		setSuspicionOpen(false);
@@ -77,24 +66,21 @@ export function ChatInput({
 
 	return (
 		<div className="flex w-full flex-col items-center gap-2">
-			{/* ── Input bar ─────────────────────────────────────────── */}
+			{/* Input bar */}
 			<div
 				className={cn(
-					'flex w-full items-center gap-1.5 rounded-4xl border border-odin-dark-500 bg-odin-dark-300 px-2 py-1.5',
+					'flex w-full items-center gap-1.5 rounded-4xl border border-surface-3 bg-surface-1 px-2 py-1.5',
 					'transition-all duration-150',
-					'focus-within:border-orange-700/60 focus-within:shadow-[0_0_0_1px_rgba(194,65,12,0.2)]',
+					'focus-within:border-gold-base/50 focus-within:shadow-[0_0_0_1px_rgba(212,160,23,0.15)]',
 					disabled && 'cursor-not-allowed opacity-50'
 				)}
 			>
 				{/* Current-user avatar */}
 				<Avatar className="h-8 w-8 shrink-0">
 					{currentUser.avatarUrl && (
-						<AvatarImage
-							src={currentUser.avatarUrl}
-							alt={currentUser.name}
-						/>
+						<AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
 					)}
-					<AvatarFallback className="bg-orange-700 text-[10px] font-bold text-white">
+					<AvatarFallback className="bg-gold-base text-[10px] font-bold text-surface-0">
 						{currentUser.initials}
 					</AvatarFallback>
 				</Avatar>
@@ -108,12 +94,12 @@ export function ChatInput({
 					disabled={disabled}
 					className={cn(
 						'h-9 flex-1 border-none bg-transparent dark:bg-transparent px-2 text-[14px]',
-						'text-odin-dark-1000 placeholder:text-odin-dark-1000-a-65',
+						'text-text-primary placeholder:text-text-muted',
 						'focus-visible:ring-0 focus-visible:ring-offset-0'
 					)}
 				/>
 
-				{/* ── Raise Suspicion ── */}
+				{/* Raise Suspicion */}
 				<Popover open={suspicionOpen} onOpenChange={setSuspicionOpen}>
 					<PopoverTrigger asChild>
 						<Button
@@ -124,8 +110,8 @@ export function ChatInput({
 							className={cn(
 								'h-8 w-8 shrink-0 rounded-xl transition-colors',
 								suspicionOpen
-									? 'bg-orange-700/20 text-orange-500'
-									: 'text-odin-dark-1000-a-65 hover:bg-orange-700/10 hover:text-orange-500'
+									? 'bg-terracotta/20 text-terracotta-bright'
+									: 'text-text-muted hover:bg-terracotta/10 hover:text-terracotta-bright'
 							)}
 						>
 							<Flag className="h-4 w-4" />
@@ -135,23 +121,19 @@ export function ChatInput({
 					<PopoverContent
 						side="top"
 						align="end"
-						className="w-52 rounded-2xl border-odin-dark-500 bg-odin-dark-300 p-1 shadow-xl"
+						className="w-52 rounded-xl border-surface-3 bg-surface-1 p-1 shadow-xl"
 					>
-						{/* Popover header */}
 						<div className="flex items-center gap-2 px-3 py-2">
-							<Flag
-								className="h-3 w-3 shrink-0 text-orange-500"
-								strokeWidth={2.5}
-							/>
-							<p className="font-ps2p text-[9px] uppercase tracking-widest text-orange-500">
+							<Flag className="h-3 w-3 shrink-0 text-terracotta-bright" strokeWidth={2.5} />
+							<p className="font-ps2p text-[9px] uppercase tracking-widest text-terracotta-bright">
 								Raise Suspicion
 							</p>
 						</div>
-						<div className="mx-2 mb-1 h-px bg-odin-dark-500" />
+						<div className="mx-2 mb-1 h-px bg-surface-3" />
 
 						<Command className="bg-transparent">
 							<CommandList>
-								<CommandEmpty className="py-4 text-center text-sm text-odin-dark-1000-a-65">
+								<CommandEmpty className="py-4 text-center text-sm text-text-muted">
 									No players available
 								</CommandEmpty>
 								<CommandGroup>
@@ -160,16 +142,13 @@ export function ChatInput({
 											key={player.id}
 											value={player.name}
 											onSelect={() => handleSelectPlayer(player)}
-											className="cursor-pointer gap-2.5 rounded-xl py-2 text-odin-dark-1000 aria-selected:bg-odin-dark-500"
+											className="cursor-pointer gap-2.5 rounded-lg py-2 text-text-primary aria-selected:bg-surface-3"
 										>
 											<Avatar className="h-6 w-6 shrink-0">
 												{player.avatarUrl && (
-													<AvatarImage
-														src={player.avatarUrl}
-														alt={player.name}
-													/>
+													<AvatarImage src={player.avatarUrl} alt={player.name} />
 												)}
-												<AvatarFallback className="bg-odin-dark-600 text-[9px] font-bold text-odin-dark-1000">
+												<AvatarFallback className="bg-surface-3 text-[9px] font-bold text-text-primary">
 													{player.initials}
 												</AvatarFallback>
 											</Avatar>
@@ -189,19 +168,18 @@ export function ChatInput({
 					disabled={!canSend}
 					onClick={handleSend}
 					className={cn(
-						'h-8 w-8 shrink-0 rounded-full bg-orange-700',
-						'hover:bg-orange-600',
+						'h-8 w-8 shrink-0 rounded-full bg-gold-base',
+						'hover:bg-gold-bright',
 						'disabled:cursor-not-allowed disabled:opacity-30'
 					)}
 				>
-					<Send className="h-3 w-3 text-white" />
+					<Send className="h-3 w-3 text-surface-0" />
 				</Button>
 			</div>
 
 			{/* Hint */}
-			<p className="text-center text-[12px] text-odin-dark-1000-a-65">
-				Tetrode is a psychological game. Agents will lie, study, and vote
-				against you.
+			<p className="text-center text-[12px] text-text-muted">
+				Tetrode is a psychological game. Agents will lie, study, and vote against you.
 			</p>
 		</div>
 	);

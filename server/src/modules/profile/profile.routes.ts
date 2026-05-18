@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { requireAuth } from '../../middlewares/auth.middleware';
 import {
    httpProfileGoogleCallback,
-   httpProfileCompleteOnboarding,
    httpProfileForgotPassword,
    httpProfileGoogleStart,
    httpProfileLogin,
@@ -11,6 +10,8 @@ import {
    httpProfileResendVerification,
    httpProfileRegister,
    httpProfileResetPassword,
+   httpProfileUpdate,
+   httpProfileUpdateWallet,
    httpProfileVerifyEmail,
 } from './profile.controllers';
 
@@ -23,7 +24,8 @@ profileRouter.post('/password/reset', httpProfileResetPassword);
 profileRouter.post('/logout', requireAuth, httpProfileLogout);
 profileRouter.post('/verify-email', httpProfileVerifyEmail);
 profileRouter.post('/resend-verification', httpProfileResendVerification);
-profileRouter.patch('/onboarding', requireAuth, httpProfileCompleteOnboarding);
+profileRouter.patch('/', requireAuth, httpProfileUpdate);
+profileRouter.patch('/wallet', requireAuth, httpProfileUpdateWallet);
 profileRouter.get('/me', requireAuth, httpProfileMe);
 profileRouter.get('/google', httpProfileGoogleStart);
 profileRouter.get('/google/callback', httpProfileGoogleCallback);

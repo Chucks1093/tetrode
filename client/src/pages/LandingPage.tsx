@@ -1,6 +1,6 @@
 import { ArrowRight, Info } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, Outlet } from 'react-router';
 import GameCard from '../components/landing/GameCard';
 import GameCardSkeleton from '../components/landing/GameCardSkeleton';
 import Footer from '../components/shared/Footer';
@@ -57,6 +57,7 @@ export default function LandingPage() {
 	return (
 		<div className="relative min-h-screen overflow-hidden bg-black text-odin-light-1000">
 			<Header />
+			<Outlet />
 
 			<div className="relative z-40 mx-auto min-h-screen max-w-6xl px-4 pb-8 pt-26 sm:px-6 sm:pt-30">
 				<main>

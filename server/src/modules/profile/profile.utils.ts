@@ -34,7 +34,7 @@ export const createNewUserWithPassword = async (input: {
          name: input.name.trim(),
          passwordHash: input.passwordHash,
          type: input.type ?? 'HUMAN',
-         provider: 'local',
+         provider: 'email',
       },
    });
 };
@@ -116,16 +116,28 @@ export const findUserById = async (profileId: string) => {
    });
 };
 
-export const updateProfileOnboarding = async (input: {
+export const updateProfileWalletAddress = async (input: {
    profileId: string;
-   avatarUrl: string;
-   interests: string[];
+   walletAddress: string;
 }) => {
    return prisma.profile.update({
       where: { id: input.profileId },
       data: {
-         avatarUrl: input.avatarUrl,
-         interests: input.interests,
+         walletAddress: input.walletAddress,
+      },
+   });
+};
+
+export const updateProfileDetails = async (input: {
+   profileId: string;
+   name?: string;
+   avatarUrl?: string;
+}) => {
+   return prisma.profile.update({
+      where: { id: input.profileId },
+      data: {
+         ...(input.name ? { name: input.name.trim() } : {}),
+         ...(input.avatarUrl ? { avatarUrl: input.avatarUrl } : {}),
       },
    });
 };

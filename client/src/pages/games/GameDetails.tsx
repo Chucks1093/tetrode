@@ -62,27 +62,23 @@ export default function GameDetails() {
 
 	if (isLoadingGame) {
 		return (
-			<div className="flex min-h-screen items-center justify-center bg-black px-6 text-odin-light-100">
-				<p className="font-ps2p text-sm text-[var(--accent-bright)]">
-					Loading Game...
-				</p>
+			<div className="flex min-h-screen items-center justify-center bg-surface-0 px-6">
+				<p className="font-ps2p text-sm text-gold-base">Loading Game...</p>
 			</div>
 		);
 	}
 
 	if (!game) {
 		return (
-			<div className="flex min-h-screen items-center justify-center bg-black px-6 text-odin-light-100">
+			<div className="flex min-h-screen items-center justify-center bg-surface-0 px-6">
 				<div className="text-center">
-					<p className="font-ps2p text-lg text-[var(--accent-bright)]">
-						Game Not Found
-					</p>
+					<p className="font-ps2p text-lg text-gold-base">Game Not Found</p>
 					{gameError ? (
-						<p className="mt-4 text-sm text-red-400">{gameError}</p>
+						<p className="mt-4 text-sm text-danger">{gameError}</p>
 					) : null}
 					<Link
 						to="/"
-						className="mt-6 inline-flex rounded-xl border border-[color:var(--gold-dim)] bg-[linear-gradient(180deg,var(--gold-bright),var(--gold-base))] px-5 py-2.5 font-jakarta font-semibold text-[color:var(--surface-0)] hover:brightness-105"
+						className="mt-6 inline-flex rounded-sm border border-gold-dim bg-gold-base px-5 py-3 font-ps2p text-[9px] uppercase tracking-wider text-surface-0 hover:bg-gold-bright"
 					>
 						Back Home
 					</Link>
@@ -139,9 +135,9 @@ export default function GameDetails() {
 
 					<Link
 						to="/"
-						className="inline-flex rounded-xl border border-[color:var(--surface-4)] bg-[color:var(--surface-2)] px-5 py-2.5 font-jakarta text-sm font-semibold text-[var(--text-primary)] hover:bg-[color:var(--surface-3)]"
+						className="inline-flex items-center gap-2 rounded-sm border border-surface-3 bg-surface-1 px-5 py-3 font-ps2p text-[9px] uppercase tracking-wider text-text-muted transition-all hover:border-surface-4 hover:text-text-primary"
 					>
-						Back To Games
+						← Back To Games
 					</Link>
 
 					<Footer />

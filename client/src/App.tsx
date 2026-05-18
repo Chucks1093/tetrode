@@ -4,6 +4,8 @@ import { Fragment } from 'react/jsx-runtime';
 import { Toaster } from 'react-hot-toast';
 
 import LandingPage from './pages/LandingPage';
+import AuthRoute from './pages/auth/AuthRoute';
+import OAuthCallback from './pages/auth/OAuthCallback';
 import GameCore from './pages/games/GameCore';
 import GameDetails from './pages/games/GameDetails';
 
@@ -12,21 +14,13 @@ import GlobalErrorPage from './pages/GlobalErrorPage';
 const router = createBrowserRouter([
 	{
 		path: '/',
+		element: <LandingPage />,
 		errorElement: <GlobalErrorPage />,
 		children: [
 			{
-				index: true,
-				element: <LandingPage />,
+				path: 'auth/:mode',
+				element: <AuthRoute />,
 			},
-			{
-				path: ':gameId',
-				element: <GameDetails />,
-			},
-			{
-				path: ':gameId/:roomId',
-				element: <GameCore />,
-			},
-
 			{
 				path: '*',
 				element: (
@@ -38,6 +32,21 @@ const router = createBrowserRouter([
 				),
 			},
 		],
+	},
+	{
+		path: '/auth/callback',
+		element: <OAuthCallback />,
+		errorElement: <GlobalErrorPage />,
+	},
+	{
+		path: '/:gameId',
+		element: <GameDetails />,
+		errorElement: <GlobalErrorPage />,
+	},
+	{
+		path: '/:gameId/:roomId',
+		element: <GameCore />,
+		errorElement: <GlobalErrorPage />,
 	},
 ]);
 

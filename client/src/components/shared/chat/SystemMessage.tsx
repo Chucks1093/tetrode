@@ -11,11 +11,11 @@ export function SystemMessage({ text, eventType = 'default' }: SystemMessageProp
 	if (eventType === 'phase') {
 		return (
 			<div className="flex w-full items-center gap-3 py-1">
-				<div className="h-px flex-1 bg-odin-dark-500" />
-				<span className="rounded-full border border-orange-500/25 bg-orange-500/10 px-4 py-1.5 font-ps2p text-[9px] uppercase tracking-[0.2em] text-orange-400">
+				<div className="h-px flex-1 bg-surface-3" />
+				<span className="rounded-full border border-gold-base/25 bg-gold-base/10 px-4 py-1.5 font-ps2p text-[9px] uppercase tracking-[0.2em] text-gold-base">
 					{text}
 				</span>
-				<div className="h-px flex-1 bg-odin-dark-500" />
+				<div className="h-px flex-1 bg-surface-3" />
 			</div>
 		);
 	}
@@ -26,30 +26,20 @@ export function SystemMessage({ text, eventType = 'default' }: SystemMessageProp
 				<span
 					className={cn(
 						'flex items-center gap-1.5 rounded-full px-4 py-1',
-						'border border-red-500/25 bg-red-500/10 text-[11px] text-red-400'
+						'border border-terracotta/25 bg-terracotta/10 text-[11px] text-terracotta-bright'
 					)}
 				>
-					<span className="text-red-500">!</span>
+					<span className="text-terracotta-bright">!</span>
 					{text}
 				</span>
 			</div>
 		);
 	}
 
-	if (eventType === 'vote') {
-		return (
-			<div className="flex justify-center py-0.5">
-				<span className="rounded-full border border-odin-dark-500 bg-odin-dark-300 px-4 py-1 text-[11px] text-odin-dark-1000-a-65">
-					{text}
-				</span>
-			</div>
-		);
-	}
-
-	/* default — subtle centered pill */
+	/* vote + default */
 	return (
 		<div className="flex justify-center py-0.5">
-			<span className="rounded-full border border-odin-dark-500 bg-odin-dark-300 px-4 py-1 text-[11px] text-odin-dark-1000-a-65">
+			<span className="rounded-full border border-surface-3 bg-surface-1 px-4 py-1 text-[11px] text-text-muted">
 				{text}
 			</span>
 		</div>
