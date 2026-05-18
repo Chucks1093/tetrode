@@ -10,6 +10,7 @@ import GameCore from './pages/games/GameCore';
 import GameDetails from './pages/games/GameDetails';
 
 import GlobalErrorPage from './pages/GlobalErrorPage';
+import { requireAuthLoader } from './loaders/auth.loader';
 
 const router = createBrowserRouter([
 	{
@@ -41,11 +42,13 @@ const router = createBrowserRouter([
 	{
 		path: '/:gameId',
 		element: <GameDetails />,
+		loader: requireAuthLoader,
 		errorElement: <GlobalErrorPage />,
 	},
 	{
 		path: '/:gameId/:roomId',
 		element: <GameCore />,
+		loader: requireAuthLoader,
 		errorElement: <GlobalErrorPage />,
 	},
 ]);

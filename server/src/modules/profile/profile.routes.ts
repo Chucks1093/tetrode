@@ -7,6 +7,7 @@ import {
    httpProfileLogin,
    httpProfileLogout,
    httpProfileMe,
+   httpProfilePrivyToken,
    httpProfileResendVerification,
    httpProfileRegister,
    httpProfileResetPassword,
@@ -27,6 +28,7 @@ profileRouter.post('/resend-verification', httpProfileResendVerification);
 profileRouter.patch('/', requireAuth, httpProfileUpdate);
 profileRouter.patch('/wallet', requireAuth, httpProfileUpdateWallet);
 profileRouter.get('/me', requireAuth, httpProfileMe);
+profileRouter.get('/privy/token', requireAuth, httpProfilePrivyToken);
 profileRouter.get('/google', httpProfileGoogleStart);
 profileRouter.get('/google/callback', httpProfileGoogleCallback);
 

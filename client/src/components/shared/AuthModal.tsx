@@ -1,5 +1,6 @@
 import { ChevronRight, Eye, EyeOff, X } from 'lucide-react';
 import { useEffect, useState, type KeyboardEvent } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { Button } from '@/components/ui/button';
 import {
 	Dialog,
@@ -13,7 +14,9 @@ import {
 	InputOTPGroup,
 	InputOTPSlot,
 } from '@/components/ui/input-otp';
+import { useEnsurePrivyWallet } from '@/hooks/auth/useEnsurePrivyWallet';
 import { authService } from '@/services/auth.service';
+import { useAuthStore } from '@/stores/useAuthStore';
 import showToast from '@/utils/toast.util';
 
 interface AuthModalProps {
@@ -33,36 +36,45 @@ function CloverMark() {
 	);
 }
 
-type AuthMode = 'signin' | 'signup' | 'verify' | 'onboarding';
+type AuthMode = 'signin' | 'signup' | 'verify' | 'onboarding' | 'wallet';
 
 export default function AuthModal({
 	open,
 	onOpenChange,
 	initialMode = 'signin',
 }: AuthModalProps) {
+	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
+	const currentUser = useAuthStore(state => state.user);
+	const { ensureWallet } = useEnsurePrivyWallet();
 	const [mode, setMode] = useState<AuthMode>(initialMode);
 	const [name, setName] = useState('');
+	const [walletAddress, setWalletAddress] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [otp, setOtp] = useState('');
 	const [showPassword, setShowPassword] = useState(false);
 	const [loading, setLoading] = useState(false);
+	const [walletLoading, setWalletLoading] = useState(false);
 	const [timeLeft, setTimeLeft] = useState(45);
 	const [canResend, setCanResend] = useState(false);
 
 	const isSignUp = mode === 'signup';
 	const isVerify = mode === 'verify';
 	const isOnboarding = mode === 'onboarding';
+	const isWalletStep = mode === 'wallet';
 
 	useEffect(() => {
 		if (!open) {
 			setMode(initialMode);
 			setName('');
+			setWalletAddress('');
 			setEmail('');
 			setPassword('');
 			setOtp('');
 			setShowPassword(false);
 			setLoading(false);
+			setWalletLoading(false);
 			setTimeLeft(45);
 			setCanResend(false);
 		}
@@ -73,12 +85,14 @@ export default function AuthModal({
 		setMode(initialMode);
 
 		if (initialMode === 'onboarding') {
-			const user = authService.getUser();
-			if (user?.name) {
-				setName(user.name);
+			if (currentUser?.name) {
+				setName(currentUser.name);
+			}
+			if (currentUser?.walletAddress) {
+				setWalletAddress(currentUser.walletAddress);
 			}
 		}
-	}, [initialMode, open]);
+	}, [currentUser?.name, initialMode, open]);
 
 	useEffect(() => {
 		if (!open || !isVerify) return;
@@ -95,6 +109,40 @@ export default function AuthModal({
 		return () => clearTimeout(timer);
 	}, [isVerify, open, timeLeft]);
 
+	useEffect(() => {
+		if (!open || !isOnboarding || walletAddress || walletLoading) {
+			return;
+		}
+
+		let active = true;
+
+		async function prepareWallet() {
+			try {
+				setWalletLoading(true);
+				const ensuredWalletAddress = await ensureWallet();
+				if (!active) return;
+				setWalletAddress(ensuredWalletAddress);
+			} catch (error) {
+				if (!active) return;
+				const message =
+					error instanceof Error
+						? error.message
+						: 'Could not initialize wallet';
+				showToast.error(message);
+			} finally {
+				if (active) {
+					setWalletLoading(false);
+				}
+			}
+		}
+
+		void prepareWallet();
+
+		return () => {
+			active = false;
+		};
+	}, [ensureWallet, isOnboarding, open, walletAddress, walletLoading]);
+
 	const deriveNameFromEmail = (value: string) => {
 		const localPart = value.split('@')[0]?.trim() ?? '';
 		const normalized = localPart.replace(/[._-]+/g, ' ').trim();
@@ -110,7 +158,26 @@ export default function AuthModal({
 
 	const openOnboardingStep = (nextName?: string) => {
 		setMode('onboarding');
-		setName(nextName ?? authService.getUser()?.name ?? '');
+		setName(nextName ?? currentUser?.name ?? '');
+	};
+
+	const openWalletStep = (address: string) => {
+		setWalletAddress(address);
+		setMode('wallet');
+	};
+
+	const finishAuthFlow = () => {
+		const redirectFromQuery = searchParams.get('redirect');
+		const redirectTarget =
+			redirectFromQuery || authService.consumeRedirectAfterLogin();
+
+		if (redirectTarget && redirectTarget.startsWith('/')) {
+			onOpenChange(false);
+			navigate(redirectTarget, { replace: true });
+			return;
+		}
+
+		onOpenChange(false);
 	};
 
 	const handleSignIn = async () => {
@@ -123,7 +190,7 @@ export default function AuthModal({
 			setLoading(true);
 			await authService.login(email.trim(), password);
 			showToast.success('Login successful');
-			onOpenChange(false);
+			finishAuthFlow();
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : 'Login failed';
@@ -212,9 +279,14 @@ export default function AuthModal({
 
 			try {
 				setLoading(true);
-				await authService.updateProfile({ name: name.trim() });
+				await authService.updateProfile({
+					name: name.trim(),
+				});
+				const ensuredWalletAddress =
+					walletAddress || currentUser?.walletAddress || (await ensureWallet());
+				setWalletAddress(ensuredWalletAddress);
 				showToast.success('Profile updated');
-				onOpenChange(false);
+				openWalletStep(ensuredWalletAddress);
 			} catch (error) {
 				const message =
 					error instanceof Error ? error.message : 'Could not save name';
@@ -222,6 +294,11 @@ export default function AuthModal({
 			} finally {
 				setLoading(false);
 			}
+			return;
+		}
+
+		if (isWalletStep) {
+			finishAuthFlow();
 			return;
 		}
 
@@ -239,6 +316,10 @@ export default function AuthModal({
 	};
 
 	const handleGoogleSignIn = () => {
+		const redirectFromQuery = searchParams.get('redirect');
+		if (redirectFromQuery) {
+			authService.setRedirectAfterLogin(redirectFromQuery);
+		}
 		authService.startGoogleAuth();
 	};
 
@@ -268,7 +349,9 @@ export default function AuthModal({
 
 					<div className="mt-4 text-center">
 						<DialogTitle className="font-jakarta text-lg font-semibold text-text-primary">
-						{isOnboarding
+						{isWalletStep
+							? 'Wallet ready'
+							: isOnboarding
 							? 'Tell us your name'
 							: isVerify
 								? 'Verify your email'
@@ -277,7 +360,9 @@ export default function AuthModal({
 									: 'Sign in to Tetrode'}
 						</DialogTitle>
 						<DialogDescription className="mt-2 text-xs font-medium text-text-muted">
-							{isOnboarding
+							{isWalletStep
+								? 'Your embedded wallet has been created for Tetrode.'
+								: isOnboarding
 								? 'This is the name other players will see in Tetrode.'
 								: isVerify
 								? `Enter the 6-digit code sent to ${email || 'your email'}`
@@ -288,7 +373,16 @@ export default function AuthModal({
 					</div>
 
 					<div className="mt-6">
-						{isOnboarding ? (
+						{isWalletStep ? (
+							<div>
+								<p className="mb-2 text-sm font-medium text-text-primary">
+									Wallet address
+								</p>
+								<div className="rounded-xl border border-surface-3 bg-surface-2 px-4 py-3 text-left text-xs leading-6 text-text-secondary">
+									{walletAddress}
+								</div>
+							</div>
+						) : isOnboarding ? (
 							<div>
 								<label className="mb-2 block text-sm font-medium text-text-primary">
 									Name
@@ -301,6 +395,13 @@ export default function AuthModal({
 									placeholder="Enter your name"
 									className="h-11 rounded-xl border-surface-3 bg-transparent px-4 text-sm text-text-primary placeholder:text-text-muted focus-visible:border-gold-base focus-visible:ring-gold-base/20"
 								/>
+								<p className="mt-2 text-[11px] leading-5 text-text-muted">
+									{walletLoading
+										? 'Preparing your wallet in the background...'
+										: walletAddress
+											? 'Wallet is ready and linked to your account.'
+											: 'Your wallet will be prepared automatically.'}
+								</p>
 							</div>
 						) : !isVerify ? (
 							<>
@@ -432,7 +533,9 @@ export default function AuthModal({
 									: isSignUp
 										? 'Creating...'
 										: 'Signing in...'
-								: isOnboarding
+								: isWalletStep
+									? 'Enter Tetrode'
+									: isOnboarding
 									? 'Continue'
 									: isVerify
 									? 'Verify & Continue'
@@ -444,7 +547,11 @@ export default function AuthModal({
 
 				<div className="border-t border-surface-3 bg-surface-2 px-6 py-4 text-center sm:px-10">
 					<p className="text-sm text-text-muted">
-						{isOnboarding ? (
+						{isWalletStep ? (
+							<>
+								You can export this wallet later from your account settings.
+							</>
+						) : isOnboarding ? (
 							<>
 								Want to change account?{' '}
 								<button

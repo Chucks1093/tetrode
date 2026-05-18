@@ -1,7 +1,8 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
-import { envConfig } from '../../config';
+import { createPrivateKey, createSign } from 'crypto';
+import { envConfig, resolvedPrivyJwtPrivateKey } from '../../config';
 import { AuthService } from '../../services/auth.service';
 import { AsyncController } from '../../types/auth.types';
 import { HTTP_STATUS } from '../../utils/logger.utils';
@@ -120,6 +121,112 @@ const parseBearerToken = (authHeader: string | undefined): string | null => {
    return token || null;
 };
 
+const base64UrlEncode = (input: string | Buffer) =>
+   Buffer.from(input)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+
+const normalizePrivateKey = (input: string) => {
+   const normalized = input
+      .trim()
+      .replace(/^"|"$/g, '')
+      .replace(/\\n/g, '\n');
+
+   if (
+      !normalized.includes('-----BEGIN PRIVATE KEY-----') &&
+      !normalized.includes('-----BEGIN RSA PRIVATE KEY-----')
+   ) {
+      throw new Error(
+         'PRIVY_JWT_PRIVATE_KEY must be a valid PEM private key.'
+      );
+   }
+
+   return normalized;
+};
+
+const parseSigningKey = (input: string) => {
+   const normalized = normalizePrivateKey(input);
+
+   const attempts: Array<() => ReturnType<typeof createPrivateKey>> = [
+      () =>
+         createPrivateKey({
+            key: normalized,
+            format: 'pem',
+            type: 'pkcs8',
+         }),
+      () =>
+         createPrivateKey({
+            key: normalized,
+            format: 'pem',
+            type: 'pkcs1',
+         }),
+      () =>
+         createPrivateKey({
+            key: normalized,
+            format: 'pem',
+         }),
+   ];
+
+   for (const attempt of attempts) {
+      try {
+         return attempt();
+      } catch {
+         continue;
+      }
+   }
+
+   throw new Error(
+      'PRIVY_JWT_PRIVATE_KEY could not be parsed. Make sure backend .env contains the PRIVATE key PEM, not the public certificate.'
+   );
+};
+
+const createPrivyCustomAuthToken = (profile: {
+   id: string;
+   email: string;
+   name: string;
+}) => {
+   const privateKey = resolvedPrivyJwtPrivateKey;
+   const issuer = envConfig.PRIVY_JWT_ISSUER;
+   const audience = envConfig.PRIVY_JWT_AUDIENCE;
+
+   if (!privateKey || !issuer || !audience) {
+      throw new Error(
+         'Privy JWT auth is not fully configured. Missing PRIVY_JWT_PRIVATE_KEY, PRIVY_JWT_ISSUER, or PRIVY_JWT_AUDIENCE.'
+         .replace('PRIVY_JWT_PRIVATE_KEY', 'PRIVY_JWT_PRIVATE_KEY or PRIVY_JWT_PRIVATE_KEY_PATH')
+      );
+   }
+
+   const now = Math.floor(Date.now() / 1000);
+   const header = {
+      alg: 'RS256',
+      typ: 'JWT',
+      ...(envConfig.PRIVY_JWT_KID ? { kid: envConfig.PRIVY_JWT_KID } : {}),
+   };
+   const payload = {
+      sub: profile.id,
+      email: profile.email,
+      name: profile.name,
+      iss: issuer,
+      aud: audience,
+      iat: now,
+      exp: now + 60 * 5,
+   };
+
+   const encodedHeader = base64UrlEncode(JSON.stringify(header));
+   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+   const signingInput = `${encodedHeader}.${encodedPayload}`;
+
+   const signer = createSign('RSA-SHA256');
+   signer.update(signingInput);
+   signer.end();
+
+   const signature = signer.sign(parseSigningKey(privateKey));
+
+   return `${signingInput}.${base64UrlEncode(signature)}`;
+};
+
 export const httpProfileRegister: AsyncController = async (req, res, next) => {
    try {
       const validated = ProfileRegisterSchema.parse(req.body);
@@ -159,6 +266,19 @@ export const httpProfileRegister: AsyncController = async (req, res, next) => {
          },
       });
    } catch (error) {
+      if (envConfig.MODE === 'development') {
+         const message =
+            error instanceof Error
+               ? error.message
+               : 'Could not create Privy auth token';
+
+         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message,
+            data: null,
+         });
+      }
+
       next(error);
    }
 };
@@ -257,6 +377,47 @@ export const httpProfileMe: AsyncController = async (req, res, next) => {
          success: true,
          message: 'Profile fetched successfully',
          data: toSafeProfile(profile),
+      });
+   } catch (error) {
+      next(error);
+   }
+};
+
+export const httpProfilePrivyToken: AsyncController = async (
+   req,
+   res,
+   next
+) => {
+   try {
+      if (!req.currentProfile) {
+         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+            success: false,
+            message: 'Authentication required',
+            data: null,
+         });
+      }
+
+      const profile = await findUserById(req.currentProfile.id);
+      if (!profile) {
+         return res.status(HTTP_STATUS.NOT_FOUND).json({
+            success: false,
+            message: 'Profile not found',
+            data: null,
+         });
+      }
+
+      const token = createPrivyCustomAuthToken({
+         id: profile.id,
+         email: profile.email,
+         name: profile.name,
+      });
+
+      return res.status(HTTP_STATUS.OK).json({
+         success: true,
+         message: 'Privy auth token created successfully',
+         data: {
+            token,
+         },
       });
    } catch (error) {
       next(error);

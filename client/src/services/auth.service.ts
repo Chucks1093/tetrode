@@ -1,21 +1,10 @@
 import { env } from '@/utils/env.utils';
+import { useAuthStore, type AuthUser } from '@/stores/useAuthStore';
 import { BaseApiService, type APIResponse } from './api.service';
 
 type AuthSubscriber = () => void;
 
-export interface User {
-	id: string;
-	name: string;
-	email: string;
-	type: 'HUMAN' | 'AGENT';
-	status: 'ACTIVE' | 'SUSPENDED' | 'DELETED';
-	emailVerified: boolean;
-	avatarUrl?: string;
-	provider?: string;
-	walletAddress?: string;
-	interests?: string[];
-	createdAt: string;
-}
+export type User = AuthUser;
 
 export interface LoginResponse {
 	profile: User;
@@ -35,19 +24,24 @@ interface UpdateProfileData {
 	avatarUrl?: string;
 }
 
+interface PrivyTokenResponse {
+	token: string;
+}
+
 export interface LoginData {
 	email: string;
 	password: string;
 }
 
 class AuthService extends BaseApiService {
-	private USER_PROFILE_KEY = 'proofline_user';
 	private SESSION_TOKEN_KEY = 'proofline_session_token';
+	private REDIRECT_AFTER_LOGIN_KEY = 'proofline_redirect_after_login';
 	private subscribers = new Set<AuthSubscriber>();
 
 	private setSessionToken(token?: string): void {
 		if (!token) return;
 		localStorage.setItem(this.SESSION_TOKEN_KEY, token);
+		this.notify();
 	}
 
 	private notify(): void {
@@ -65,6 +59,17 @@ class AuthService extends BaseApiService {
 
 	startGoogleAuth(): void {
 		window.location.href = `${env.VITE_BACKEND_URL}/profile/google`;
+	}
+
+	setRedirectAfterLogin(target: string): void {
+		localStorage.setItem(this.REDIRECT_AFTER_LOGIN_KEY, target);
+	}
+
+	consumeRedirectAfterLogin(): string | null {
+		const target = localStorage.getItem(this.REDIRECT_AFTER_LOGIN_KEY);
+		if (!target) return null;
+		localStorage.removeItem(this.REDIRECT_AFTER_LOGIN_KEY);
+		return target;
 	}
 
 	getSessionToken(): string | null {
@@ -130,6 +135,35 @@ class AuthService extends BaseApiService {
 			return profile;
 		} catch (error) {
 			throw this.handleError(error);
+		}
+	}
+
+	async updateWalletAddress(walletAddress: string): Promise<User> {
+		try {
+			const response = await this.api.patch<
+				APIResponse<{ profile: User }>
+			>('/profile/wallet', { walletAddress });
+			const profile = response.data.data.profile;
+			this.setUser(profile);
+			return profile;
+		} catch (error) {
+			throw this.handleError(error);
+		}
+	}
+
+	async getPrivyAuthToken(): Promise<string | undefined> {
+		if (!this.isAuthenticated()) {
+			return undefined;
+		}
+
+		try {
+			const response = await this.api.get<APIResponse<PrivyTokenResponse>>(
+				'/profile/privy/token'
+			);
+			return response.data.data.token;
+		} catch (error) {
+			console.error('Failed to get Privy auth token:', error);
+			return undefined;
 		}
 	}
 
@@ -233,12 +267,12 @@ class AuthService extends BaseApiService {
 
 	// User management
 	setUser(user: User): void {
-		localStorage.setItem(this.USER_PROFILE_KEY, JSON.stringify(user));
+		useAuthStore.getState().setUser(user);
+		this.notify();
 	}
 
 	getUser(): User | null {
-		const userStr = localStorage.getItem(this.USER_PROFILE_KEY);
-		return userStr ? JSON.parse(userStr) : null;
+		return useAuthStore.getState().user;
 	}
 
 	isAuthenticated(): boolean {
@@ -280,7 +314,7 @@ class AuthService extends BaseApiService {
 	}
 
 	protected clearAuth(): void {
-		localStorage.removeItem(this.USER_PROFILE_KEY);
+		useAuthStore.getState().clearUser();
 		localStorage.removeItem(this.SESSION_TOKEN_KEY);
 	}
 }

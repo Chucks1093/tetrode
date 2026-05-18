@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { Clover } from 'lucide-react';
 import { authService } from '@/services/auth.service';
@@ -8,23 +8,51 @@ function OAuthCallback() {
 	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
 	const [statusText, setStatusText] = useState('Finishing Google login...');
+	const hasStartedRef = useRef(false);
 
 	useEffect(() => {
-		const result = authService.handleOAuthCallback(searchParams);
-
-		if (result.success) {
-			showToast.success(result.message);
-			navigate('/auth/onboarding', { replace: true });
+		if (hasStartedRef.current) {
 			return;
 		}
 
-		showToast.error(result.message);
-		setStatusText(result.message);
-		const timer = setTimeout(() => {
-			navigate('/', { replace: true });
-		}, 1500);
+		hasStartedRef.current = true;
+		let active = true;
 
-		return () => clearTimeout(timer);
+		async function finalizeOAuth() {
+			const result = authService.handleOAuthCallback(searchParams);
+
+			if (!result.success) {
+				showToast.error(result.message);
+				setStatusText(result.message);
+				const timer = setTimeout(() => {
+					navigate('/', { replace: true });
+				}, 1500);
+
+				return () => clearTimeout(timer);
+			}
+
+			if (!active) return;
+			showToast.success(result.message);
+			const profile = result.profile;
+			const hasName = Boolean(profile?.name?.trim());
+			const hasWallet = Boolean(profile?.walletAddress?.trim());
+
+			if (hasName && hasWallet) {
+				const redirectTarget = authService.consumeRedirectAfterLogin();
+				navigate(redirectTarget && redirectTarget.startsWith('/') ? redirectTarget : '/', {
+					replace: true,
+				});
+				return;
+			}
+
+			navigate('/auth/onboarding', { replace: true });
+		}
+
+		void finalizeOAuth();
+
+		return () => {
+			active = false;
+		};
 	}, [navigate, searchParams]);
 
 	return (

@@ -6,7 +6,8 @@ function isValidMode(mode: string | null) {
 		mode === 'signin' ||
 		mode === 'signup' ||
 		mode === 'verify' ||
-		mode === 'onboarding'
+		mode === 'onboarding' ||
+		mode === 'wallet'
 	);
 }
 

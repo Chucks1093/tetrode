@@ -1,7 +1,7 @@
 import { redirect } from 'react-router';
 import { authService } from '@/services/auth.service';
 
-export async function storiesAuthLoader({
+export async function requireAuthLoader({
 	request,
 }: {
 	request: Request;

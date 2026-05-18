@@ -18,6 +18,7 @@ const gameNotes: Record<string, string[]> = {
 export default function GameDetails() {
 	const navigate = useNavigate();
 	const { gameId = '' } = useParams();
+	const player = playerService.getIdentity();
 	const [game, setGame] = useState<Game | null>(null);
 	const [gameError, setGameError] = useState<string | null>(null);
 	const [isLoadingGame, setIsLoadingGame] = useState(true);
@@ -100,7 +101,6 @@ export default function GameDetails() {
 		try {
 			setIsCreatingRoom(true);
 			setRoomError(null);
-			const player = playerService.getIdentity();
 			const createdRoom = await roomService.createRoom({
 				gameId: game.id,
 				actorId: player.actorId,
@@ -130,6 +130,15 @@ export default function GameDetails() {
 						{notes.map(note => (
 							<p key={note}>{note}</p>
 						))}
+						<p className="text-sm text-text-muted">
+							Playing as{' '}
+							<span className="font-semibold text-text-primary">
+								{player.displayName}
+							</span>
+							{player.isAuthenticated
+								? '. Your authenticated profile will be used for this room.'
+								: '. This is a temporary guest identity.'}
+						</p>
 						{roomError ? <p className="text-sm text-red-400">{roomError}</p> : null}
 					</GameDetailsCard>
 

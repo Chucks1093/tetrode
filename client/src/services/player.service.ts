@@ -1,8 +1,10 @@
 import { authService } from './auth.service';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 export interface LocalPlayerIdentity {
 	actorId: string;
 	displayName: string;
+	isAuthenticated: boolean;
 }
 
 const STORAGE_KEY = 'tetrode_player_identity';
@@ -27,16 +29,18 @@ function normalizeIdentity(input: unknown): LocalPlayerIdentity | null {
 	return {
 		actorId,
 		displayName,
+		isAuthenticated: false,
 	};
 }
 
 class PlayerService {
 	getIdentity(): LocalPlayerIdentity {
-		const user = authService.getUser();
+		const user = useAuthStore.getState().user ?? authService.getUser();
 		if (user?.id && user?.name?.trim()) {
 			return {
 				actorId: user.id,
 				displayName: user.name.trim(),
+				isAuthenticated: true,
 			};
 		}
 
@@ -56,6 +60,7 @@ class PlayerService {
 		const fallbackIdentity = {
 			actorId: crypto.randomUUID(),
 			displayName: 'Player',
+			isAuthenticated: false,
 		};
 
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(fallbackIdentity));

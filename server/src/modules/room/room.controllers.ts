@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import { Prisma, ParticipantType, RoomStatus } from '@prisma/client';
 import { AsyncController } from '../../types/auth.types';
 import { agentService } from '../../services/agent.service';
@@ -11,6 +10,7 @@ import {
    ListRoomsQuerySchema,
 } from './room.schemas';
 import { findRoomWithParticipants, serializeRoom } from './room.utils';
+import { pickAgentNames } from '../chat/chat.utils';
 
 function getRouteParam(value: string | string[] | undefined) {
    return Array.isArray(value) ? value[0] : value;
@@ -19,50 +19,70 @@ function getRouteParam(value: string | string[] | undefined) {
 export const httpCreateRoom: AsyncController = async (req, res, next) => {
    try {
       const validated = CreateRoomSchema.parse(req.body);
-      let hiddenHumanAgentSessionId: string | null = null;
+      const game = await prisma.game.findUnique({
+         where: { publicId: validated.gameId },
+      });
 
-      if (validated.gameId === 'the-hidden-human') {
-         const agent = await agentService.createAgent({
-            title: 'The Hidden Human Agent',
+      if (!game) {
+         return res.status(HTTP_STATUS.NOT_FOUND).json({
+            success: false,
+            message: 'Game not found',
+            data: null,
          });
-         hiddenHumanAgentSessionId = agent.id;
       }
 
-      const room = await prisma.room.create({
-         data: {
-            gameId: validated.gameId,
-            participants: {
-               create: [
-                  {
-                     type: ParticipantType.HUMAN,
-                     actorId: validated.actorId,
-                     displayName: validated.displayName,
-                  },
-                  ...(validated.gameId === 'the-hidden-human'
-                     ? [
-                          {
-                             type: ParticipantType.AI,
-                             actorId:
-                                hiddenHumanAgentSessionId ?? randomUUID(),
-                             displayName: 'Agent-7',
-                          },
-                       ]
-                     : []),
-               ],
-            },
-         },
-         include: {
-            participants: {
-               orderBy: { joinedAt: 'asc' },
-            },
-         },
-      });
+      const createdAgentSessionIds: string[] = [];
 
-      return res.status(HTTP_STATUS.CREATED).json({
-         success: true,
-         message: 'Room created successfully',
-         data: serializeRoom(room),
-      });
+      try {
+         const agentNames = pickAgentNames(game.maxAgents);
+
+         for (let index = 0; index < game.maxAgents; index += 1) {
+            const agent = await agentService.createAgent({
+               title: `${game.title} — ${agentNames[index]}`,
+            });
+            createdAgentSessionIds.push(agent.id);
+         }
+
+         const room = await prisma.room.create({
+            data: {
+               gameId: validated.gameId,
+               participants: {
+                  create: [
+                     {
+                        type: ParticipantType.HUMAN,
+                        actorId: validated.actorId,
+                        displayName: validated.displayName,
+                     },
+                     ...createdAgentSessionIds.map((agentSessionId, index) => ({
+                        type: ParticipantType.AI,
+                        actorId: agentSessionId,
+                        displayName: agentNames[index] ?? `Player${index + 1}`,
+                     })),
+                  ],
+               },
+            },
+            include: {
+               participants: {
+                  orderBy: { joinedAt: 'asc' },
+               },
+            },
+         });
+
+         return res.status(HTTP_STATUS.CREATED).json({
+            success: true,
+            message: 'Room created successfully',
+            data: serializeRoom(room),
+         });
+      } catch (error) {
+         if (createdAgentSessionIds.length > 0) {
+            await Promise.allSettled(
+               createdAgentSessionIds.map(agentId =>
+                  agentService.deleteAgent(agentId)
+               )
+            );
+         }
+         throw error;
+      }
    } catch (error) {
       next(error);
    }

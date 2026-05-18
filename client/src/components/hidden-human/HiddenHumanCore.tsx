@@ -8,16 +8,8 @@ import { chatService, type RoomChatMessage } from '@/services/chat.service';
 import { playerService } from '@/services/player.service';
 import type { Room } from '@/services/room.service';
 
-/* ------------------------------------------------------------------ */
-/* Types                                                                */
-/* ------------------------------------------------------------------ */
-
 const PHASE = { label: 'Discussion', round: 1, total: 3 };
 const INITIAL_TIMER = 90;
-
-/* ------------------------------------------------------------------ */
-/* Helpers                                                              */
-/* ------------------------------------------------------------------ */
 
 function nowStamp() {
 	const d = new Date();
@@ -67,10 +59,6 @@ function toFeedMessage(
 	};
 }
 
-/* ------------------------------------------------------------------ */
-/* Main                                                                 */
-/* ------------------------------------------------------------------ */
-
 interface HiddenHumanCoreProps {
 	room?: Room | null;
 	roomError?: string | null;
@@ -83,16 +71,16 @@ export default function HiddenHumanCore({
 	const playerIdentity = playerService.getIdentity();
 	const currentParticipant =
 		room?.participants?.find(
-			participant =>
-				participant.type === 'HUMAN' &&
-				participant.actorId === playerIdentity.actorId
+			participant => participant.actorId === playerIdentity.actorId
 		) ?? null;
 	const otherParticipants =
 		room?.participants?.filter(
 			participant => participant.id !== currentParticipant?.id
 		) ?? [];
+
 	const [messages, setMessages] = useState<FeedMessage[]>([]);
 	const [messagesError, setMessagesError] = useState<string | null>(null);
+	const [isSending, setIsSending] = useState(false);
 	const [timer, setTimer] = useState(INITIAL_TIMER);
 
 	useEffect(() => {
@@ -100,18 +88,7 @@ export default function HiddenHumanCore({
 		return () => clearInterval(id);
 	}, []);
 
-	const syncMessages = async (
-		currentRoomId: string,
-		participantId?: string | null
-	) => {
-		const response = await chatService.getMessages(currentRoomId);
-		setMessages(
-			response.messages.map(message =>
-				toFeedMessage(message, participantId ?? null)
-			)
-		);
-	};
-
+	// Load history on mount
 	useEffect(() => {
 		let isMounted = true;
 
@@ -128,8 +105,8 @@ export default function HiddenHumanCore({
 				const response = await chatService.getMessages(room.id);
 				if (!isMounted) return;
 				setMessages(
-					response.messages.map(message =>
-						toFeedMessage(message, currentParticipant?.id ?? null)
+					response.messages.map(m =>
+						toFeedMessage(m, currentParticipant?.id ?? null)
 					)
 				);
 				setMessagesError(null);
@@ -142,10 +119,7 @@ export default function HiddenHumanCore({
 		}
 
 		void loadMessages();
-
-		return () => {
-			isMounted = false;
-		};
+		return () => { isMounted = false; };
 	}, [room?.id, currentParticipant?.id]);
 
 	const chatPlayers: ChatPlayer[] = otherParticipants.map(participant => ({
@@ -155,42 +129,45 @@ export default function HiddenHumanCore({
 	}));
 
 	const handleSend = async (text: string) => {
-		if (!room?.id || !currentParticipant?.id) {
-			return;
-		}
+		if (!room?.id || !currentParticipant?.id) return;
 
 		const optimisticId = `temp-${Date.now()}`;
-		const optimisticMessage: FeedMessage = {
-			id: optimisticId,
-			sender: currentParticipant.displayName,
-			type: 'human',
-			text,
-			time: nowStamp(),
-		};
 
-		setMessages(prev => [...prev, optimisticMessage]);
+		// Show the human's message immediately while waiting for agent replies
+		setMessages(prev => [
+			...prev,
+			{
+				id: optimisticId,
+				sender: currentParticipant.displayName,
+				type: 'human' as const,
+				text,
+				time: nowStamp(),
+			},
+		]);
+
+		setIsSending(true);
 
 		try {
-			const createdMessage = await chatService.createMessage(room.id, {
+			const { message, agentReplies } = await chatService.createMessage(room.id, {
 				senderId: currentParticipant.id,
 				content: text,
 			});
-			setMessages(prev =>
-				prev.map(message =>
-					message.id === optimisticId
-						? toFeedMessage(createdMessage, currentParticipant.id)
-						: message
-				)
-			);
-			await syncMessages(room.id, currentParticipant.id);
+
+			// Replace optimistic message with confirmed one, then append all agent replies
+			setMessages(prev => [
+				...prev.filter(m => m.id !== optimisticId),
+				toFeedMessage(message, currentParticipant.id),
+				...agentReplies.map(r => toFeedMessage(r, currentParticipant.id)),
+			]);
+
 			setMessagesError(null);
 		} catch (error) {
-			setMessages(prev =>
-				prev.filter(message => message.id !== optimisticId)
-			);
+			setMessages(prev => prev.filter(m => m.id !== optimisticId));
 			setMessagesError(
 				error instanceof Error ? error.message : 'Failed to send message.'
 			);
+		} finally {
+			setIsSending(false);
 		}
 	};
 
@@ -198,7 +175,7 @@ export default function HiddenHumanCore({
 		setMessages(prev => [
 			...prev,
 			{
-				id: prev.length + 1,
+				id: String(prev.length + 1),
 				sender: 'SYSTEM',
 				type: 'system',
 				text: `You raised suspicion on ${player.name}.`,
@@ -216,6 +193,9 @@ export default function HiddenHumanCore({
 					</p>
 
 					<div className="flex items-center gap-6 text-xs">
+						<p className="max-w-[11rem] truncate uppercase tracking-widest text-text-muted">
+							{currentParticipant?.displayName ?? playerIdentity.displayName}
+						</p>
 						<p className="uppercase tracking-widest text-text-muted">
 							{PHASE.label}
 						</p>
@@ -238,7 +218,6 @@ export default function HiddenHumanCore({
 				</div>
 			</header>
 
-			{/* ── Scrollable chat ── */}
 			<div className="mx-auto mt-18 w-full max-w-5xl bg-transparent px-4 sm:px-6">
 				{roomError ? (
 					<p className="py-2 text-sm text-red-400">{roomError}</p>
@@ -249,8 +228,7 @@ export default function HiddenHumanCore({
 				<ChatFeed messages={messages} />
 			</div>
 
-			{/* ── Chat input ── */}
-			<div className="fixed inset-x-0 bottom-0 z-40  pb-2 pt-4 backdrop-blur">
+			<div className="fixed inset-x-0 bottom-0 z-40 pb-2 pt-4 backdrop-blur">
 				<div className="mx-auto max-w-5xl px-4 sm:px-6">
 					<ChatInput
 						currentUser={{
@@ -266,7 +244,7 @@ export default function HiddenHumanCore({
 						onSend={text => void handleSend(text)}
 						onRaiseSuspicion={handleRaiseSuspicion}
 						placeholder="Say something… blend in."
-						disabled={!room || !currentParticipant}
+						disabled={!room || !currentParticipant || isSending}
 					/>
 				</div>
 			</div>

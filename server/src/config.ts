@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import fs from 'fs';
 
 dotenv.config({
    path: process.env.ENV_FILE || '.env',
@@ -52,12 +53,22 @@ export const envSchema = z.object({
       .optional(),
    PRIVY_APP_ID: z.string().optional(),
    PRIVY_APP_SECRET: z.string().optional(),
+   PRIVY_JWT_ISSUER: z.string().optional(),
+   PRIVY_JWT_AUDIENCE: z.string().optional(),
+   PRIVY_JWT_PRIVATE_KEY: z.string().optional(),
+   PRIVY_JWT_PRIVATE_KEY_PATH: z.string().optional(),
+   PRIVY_JWT_KID: z.string().optional(),
    OPENCODE_PROVIDER: z.string().default('aihubmix'),
    OPENCODE_MODEL_ID: z.string().default('deep-deepseek-v4-flash'),
    OPENCODE_BASE_URL: z.string().url().default('http://127.0.0.1:4096'),
 });
 
 export const envConfig = envSchema.parse(process.env);
+
+export const resolvedPrivyJwtPrivateKey =
+   envConfig.PRIVY_JWT_PRIVATE_KEY_PATH
+      ? fs.readFileSync(envConfig.PRIVY_JWT_PRIVATE_KEY_PATH, 'utf8')
+      : envConfig.PRIVY_JWT_PRIVATE_KEY;
 
 const developmentOrigins = ['http://localhost:5173', 'http://localhost:3000'];
 const sharedOrigins = ['https://proofline-eight.vercel.app', 'https://proofline.xyz'];

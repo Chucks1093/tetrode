@@ -22,7 +22,6 @@ async function startServer() {
    }
 }
 
-// Handle uncaught exceptions
 process.on('uncaughtException', error => {
    console.error('Uncaught Exception:', error);
    process.exit(1);
@@ -35,11 +34,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 process.on('SIGINT', async () => {
    await agentService.stopServer();
-   console.log('🤖 OpenCode server stopped');
    await prisma.$disconnect();
-   console.log('💾 Database connection closed');
-
-   console.log('👋 Shutdown complete');
    process.exit(0);
 });
 

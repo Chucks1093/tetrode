@@ -12,6 +12,11 @@ export interface RoomChatMessage {
 	createdAt: string;
 }
 
+export interface CreateMessageResponse {
+	message: RoomChatMessage;
+	agentReplies: RoomChatMessage[];
+}
+
 class ChatService extends BaseApiService {
 	async getMessages(
 		roomId: string,
@@ -30,9 +35,9 @@ class ChatService extends BaseApiService {
 	async createMessage(
 		roomId: string,
 		input: { senderId: string; content: string }
-	): Promise<RoomChatMessage> {
+	): Promise<CreateMessageResponse> {
 		try {
-			const response = await this.api.post<APIResponse<RoomChatMessage>>(
+			const response = await this.api.post<APIResponse<CreateMessageResponse>>(
 				`/rooms/${roomId}/chat/messages`,
 				input
 			);

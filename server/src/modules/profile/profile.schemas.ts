@@ -29,6 +29,7 @@ export const ProfileWalletSchema = z.object({
       .min(1, 'Wallet address is required')
       .trim(),
 });
+export const ProfilePrivyTokenSchema = z.object({});
 
 export const ForgotPasswordSchema = z.object({
    email: z.string().email('Invalid email address'),
