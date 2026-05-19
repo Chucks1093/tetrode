@@ -51,7 +51,7 @@ export default function Header() {
 				{/* Logo */}
 				<Link
 					to="/"
-					className="flex items-center gap-2 font-ps2p text-sm uppercase text-gold-base"
+					className="flex items-center gap-1 font-ps2p text-sm uppercase text-gold-base"
 				>
 					<img
 						src="/icons/logo.svg"
@@ -128,16 +128,24 @@ export default function Header() {
 												Wallet
 											</span>
 											<span className="font-ps2p text-[7px] text-text-secondary">
-												{user.walletAddress.slice(0, 6)}…{user.walletAddress.slice(-4)}
+												{user.walletAddress.slice(0, 6)}…
+												{user.walletAddress.slice(-4)}
 											</span>
 										</div>
 										<button
 											type="button"
-											onClick={e => { e.stopPropagation(); void copyWallet(); }}
+											onClick={e => {
+												e.stopPropagation();
+												void copyWallet();
+											}}
 											className="flex items-center gap-1 rounded-sm border border-surface-3 px-2 py-1 font-ps2p text-[7px] uppercase tracking-wider text-text-muted transition-colors hover:border-surface-4 hover:text-text-primary"
 											aria-label="Copy wallet address"
 										>
-											{copied ? <Check className="size-2.5 text-success" /> : <Copy className="size-2.5" />}
+											{copied ? (
+												<Check className="size-2.5 text-success" />
+											) : (
+												<Copy className="size-2.5" />
+											)}
 											{copied ? 'Copied' : 'Copy'}
 										</button>
 									</div>

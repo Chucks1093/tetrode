@@ -5,6 +5,7 @@ import { ChatFeed, ChatInput } from '@/components/shared/chat';
 import type { FeedMessage, ChatPlayer } from '@/components/shared/chat';
 import { cn } from '@/lib/utils';
 import { chatService, type RoomChatMessage } from '@/services/chat.service';
+import { socketService } from '@/services/socket.service';
 import { playerService } from '@/services/player.service';
 import type { Room } from '@/services/room.service';
 
@@ -80,7 +81,6 @@ export default function HiddenHumanCore({
 
 	const [messages, setMessages] = useState<FeedMessage[]>([]);
 	const [messagesError, setMessagesError] = useState<string | null>(null);
-	const [isSending, setIsSending] = useState(false);
 	const [timer, setTimer] = useState(INITIAL_TIMER);
 
 	useEffect(() => {
@@ -88,7 +88,7 @@ export default function HiddenHumanCore({
 		return () => clearInterval(id);
 	}, []);
 
-	// Load history on mount
+	// Load message history on mount
 	useEffect(() => {
 		let isMounted = true;
 
@@ -122,6 +122,27 @@ export default function HiddenHumanCore({
 		return () => { isMounted = false; };
 	}, [room?.id, currentParticipant?.id]);
 
+	// Connect socket and listen for incoming messages
+	useEffect(() => {
+		if (!room?.id) return;
+
+		socketService.connect();
+		socketService.joinRoom(room.id);
+
+		socketService.onMessage((incoming: RoomChatMessage) => {
+			setMessages(prev => {
+				// Drop duplicates — the optimistic message uses a temp id so won't match
+				if (prev.some(m => m.id === incoming.id)) return prev;
+				return [...prev, toFeedMessage(incoming, currentParticipant?.id ?? null)];
+			});
+		});
+
+		return () => {
+			socketService.offMessage();
+			socketService.leaveRoom(room.id);
+		};
+	}, [room?.id, currentParticipant?.id]);
+
 	const chatPlayers: ChatPlayer[] = otherParticipants.map(participant => ({
 		id: participant.id,
 		name: participant.displayName,
@@ -133,7 +154,7 @@ export default function HiddenHumanCore({
 
 		const optimisticId = `temp-${Date.now()}`;
 
-		// Show the human's message immediately while waiting for agent replies
+		// Show the human's own message immediately
 		setMessages(prev => [
 			...prev,
 			{
@@ -145,19 +166,17 @@ export default function HiddenHumanCore({
 			},
 		]);
 
-		setIsSending(true);
-
 		try {
-			const { message, agentReplies } = await chatService.createMessage(room.id, {
+			const confirmed = await chatService.createMessage(room.id, {
 				senderId: currentParticipant.id,
 				content: text,
 			});
 
-			// Replace optimistic message with confirmed one, then append all agent replies
+			// Replace optimistic with the confirmed message from server
+			// Agent replies will arrive on their own via the socket
 			setMessages(prev => [
 				...prev.filter(m => m.id !== optimisticId),
-				toFeedMessage(message, currentParticipant.id),
-				...agentReplies.map(r => toFeedMessage(r, currentParticipant.id)),
+				toFeedMessage(confirmed, currentParticipant.id),
 			]);
 
 			setMessagesError(null);
@@ -166,8 +185,6 @@ export default function HiddenHumanCore({
 			setMessagesError(
 				error instanceof Error ? error.message : 'Failed to send message.'
 			);
-		} finally {
-			setIsSending(false);
 		}
 	};
 
@@ -244,7 +261,7 @@ export default function HiddenHumanCore({
 						onSend={text => void handleSend(text)}
 						onRaiseSuspicion={handleRaiseSuspicion}
 						placeholder="Say something… blend in."
-						disabled={!room || !currentParticipant || isSending}
+						disabled={!room || !currentParticipant}
 					/>
 				</div>
 			</div>

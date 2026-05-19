@@ -102,7 +102,34 @@ export async function findRoomByPublicId(roomId: string) {
 	return prisma.room.findUnique({ where: { publicId: roomId } });
 }
 
-// ── Prompt builder ────────────────────────────────────────────────────────────
+// ── Prompt builders ───────────────────────────────────────────────────────────
+
+export function buildRoomStartPrompt(input: {
+	agentName: string;
+	actorId: string;
+	participants: Array<{ displayName: string; isSelf: boolean }>;
+}) {
+	const personality = derivePersonality(input.actorId);
+	const personalityDescription = getPersonalityDescription(personality);
+
+	const participantList = input.participants
+		.map(p => (p.isSelf ? `${p.displayName} (you)` : p.displayName))
+		.join(', ');
+
+	return `You are ${input.agentName}, a player in a live social deduction game called The Hidden Human.
+
+The game has just started. Everyone in this room believes all other players are AI agents. But one player is secretly a real human trying to blend in. Your goal is to find out who it is through conversation and behavior.
+
+Your personality: ${personalityDescription}
+
+Players in this room: ${participantList}
+
+Nobody has spoken yet. The room just opened. React however feels natural for your personality — break the ice, make an observation, ask something, or just let people know you are here. Keep it short, 1 to 2 sentences.
+
+No markdown, no bullet points. Never say you are an AI or reference your nature.
+
+What does ${input.agentName} say first?`;
+}
 
 export function buildHiddenHumanAgentPrompt(input: {
 	agentName: string;

@@ -1,6 +1,7 @@
-import { Prisma, ParticipantType, RoomStatus } from '@prisma/client';
+import { ChatSenderType, Prisma, ParticipantType, RoomStatus } from '@prisma/client';
 import { AsyncController } from '../../types/auth.types';
 import { agentService } from '../../services/agent.service';
+import { io } from '../../socket';
 import { HTTP_STATUS } from '../../utils/logger.utils';
 import { prisma } from '../../utils/prisma.utils';
 import {
@@ -10,10 +11,65 @@ import {
    ListRoomsQuerySchema,
 } from './room.schemas';
 import { findRoomWithParticipants, serializeRoom } from './room.utils';
-import { pickAgentNames } from '../chat/chat.utils';
+import { buildRoomStartPrompt, pickAgentNames, serializeChatMessage } from '../chat/chat.utils';
 
 function getRouteParam(value: string | string[] | undefined) {
    return Array.isArray(value) ? value[0] : value;
+}
+
+async function triggerRoomStart(
+   roomPublicId: string,
+   roomId: string,
+   participants: Array<{
+      id: string;
+      actorId: string;
+      displayName: string;
+      type: ParticipantType;
+   }>
+) {
+   const aiParticipants = participants.filter(
+      p => p.type === ParticipantType.AI && p.actorId
+   );
+   if (aiParticipants.length === 0) return;
+
+   await Promise.allSettled(
+      aiParticipants.map(async agent => {
+         try {
+            const prompt = buildRoomStartPrompt({
+               agentName: agent.displayName,
+               actorId: agent.actorId,
+               participants: participants.map(p => ({
+                  displayName: p.displayName,
+                  isSelf: p.id === agent.id,
+               })),
+            });
+
+            const raw = await agentService.promptAgentText(agent.actorId, prompt);
+            const content = raw.replace(/\s+/g, ' ').trim();
+
+            if (!content || content.toUpperCase() === 'IGNORE') return;
+
+            const saved = await prisma.chatMessage.create({
+               data: {
+                  roomId,
+                  senderType: ChatSenderType.AI,
+                  senderParticipantId: agent.id,
+                  content,
+               },
+               include: {
+                  room: { select: { publicId: true } },
+                  senderParticipant: {
+                     select: { publicId: true, displayName: true, type: true },
+                  },
+               },
+            });
+
+            io.to(roomPublicId).emit('message:new', serializeChatMessage(saved));
+         } catch (error) {
+            console.error(`Room start agent ${agent.displayName} failed:`, error);
+         }
+      })
+   );
 }
 
 export const httpCreateRoom: AsyncController = async (req, res, next) => {
@@ -68,11 +124,20 @@ export const httpCreateRoom: AsyncController = async (req, res, next) => {
             },
          });
 
-         return res.status(HTTP_STATUS.CREATED).json({
+         res.status(HTTP_STATUS.CREATED).json({
             success: true,
             message: 'Room created successfully',
             data: serializeRoom(room),
          });
+
+         // Agents open the room in the background — fires after response is sent
+         void triggerRoomStart(
+            room.publicId,
+            room.id,
+            room.participants
+         );
+
+         return;
       } catch (error) {
          if (createdAgentSessionIds.length > 0) {
             await Promise.allSettled(

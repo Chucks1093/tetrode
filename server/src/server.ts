@@ -1,5 +1,6 @@
+import { createServer } from 'http';
 import app from './app';
-
+import { initSocket } from './socket';
 import { agentService } from './services/agent.service';
 import { envConfig } from './config';
 import { logger } from './utils/logger.utils';
@@ -9,10 +10,14 @@ async function startServer() {
    try {
       await prisma.$connect();
       logger.info('Connected to database');
+
       const agentServerUrl = await agentService.startServer();
       logger.info(`OpenCode server ready at ${agentServerUrl}`);
 
-      app.listen(envConfig.PORT, () => {
+      const httpServer = createServer(app);
+      initSocket(httpServer);
+
+      httpServer.listen(envConfig.PORT, () => {
          logger.info(`Server running on port ${envConfig.PORT}`);
       });
    } catch (error) {
