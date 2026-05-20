@@ -1,5 +1,5 @@
 // src/app.ts
-import express, { Express, Response, RequestHandler } from 'express';
+import express, { Express, Response, RequestHandler, Request } from 'express';
 import { TspecDocsMiddleware } from 'tspec';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware'; // Add notFoundHandler import
 import router from './modules/index';
@@ -10,6 +10,10 @@ import tspecOptions from './tspec.config';
 import { envConfig } from './config';
 import { SendMail } from './utils/mail.utils';
 import { appRateLimit } from './middlewares/rate.middleware';
+import { io } from './socket';
+import { prisma } from './utils/prisma.utils';
+import { serializeChatMessage } from './modules/chat/chat.utils';
+import { ChatSenderType } from '@prisma/client';
 
 const app: Express = express();
 
@@ -83,6 +87,29 @@ app.get('/test-email', async (_, res: Response) => {
 // Redirect root
 app.get('/', (_, res: Response) => {
    res.redirect('/api-docs');
+});
+
+// Internal endpoint — called by MCP tools to persist and broadcast vote events
+app.post('/internal/vote-cast', (req: Request, res: Response) => {
+   void (async () => {
+      const { roomPublicId, voterName } = req.body as { roomPublicId?: string; voterName?: string };
+      if (roomPublicId && voterName) {
+         const room = await prisma.room.findUnique({ where: { publicId: roomPublicId } }).catch(() => null);
+         if (room) {
+            const sysMsg = await prisma.chatMessage.create({
+               data: { roomId: room.id, senderType: ChatSenderType.SYSTEM, content: `${voterName} has voted.` },
+               include: {
+                  room: { select: { publicId: true } },
+                  senderParticipant: { select: { publicId: true, displayName: true, type: true } },
+               },
+            }).catch(() => null);
+            if (sysMsg) {
+               io.to(roomPublicId).emit('message:new', serializeChatMessage(sysMsg));
+            }
+         }
+      }
+      res.json({ success: true });
+   })();
 });
 
 // Routes

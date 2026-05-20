@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, Copy, DoorOpen, MoreHorizontal, Users } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ChatFeed, ChatInput } from '@/components/shared/chat';
 import type { FeedMessage, ChatPlayer } from '@/components/shared/chat';
@@ -18,7 +18,7 @@ import { socketService } from '@/services/socket.service';
 import { playerService } from '@/services/player.service';
 import { roomService, type Room } from '@/services/room.service';
 
-const INITIAL_TIMER = 90;
+const GAME_DURATION_S = 300;
 
 function nowStamp() {
 	const d = new Date();
@@ -45,10 +45,19 @@ function toFeedMessage(
 	currentParticipantId: string | null
 ): FeedMessage {
 	if (message.senderType === 'SYSTEM') {
+		const lower = message.content.toLowerCase();
+		const eventType = lower.includes('game started')
+			? ('phase' as const)
+			: lower.includes('has voted')
+				? ('vote' as const)
+				: lower.includes("time's up")
+					? ('result' as const)
+					: ('default' as const);
 		return {
 			id: message.id,
 			sender: 'SYSTEM',
 			type: 'system',
+			eventType,
 			text: message.content,
 		};
 	}
@@ -90,17 +99,56 @@ export default function HiddenHumanCore({
 
 	const [messages, setMessages] = useState<FeedMessage[]>([]);
 	const [messagesError, setMessagesError] = useState<string | null>(null);
-	const [timer, setTimer] = useState(INITIAL_TIMER);
+	const [timer, setTimer] = useState(GAME_DURATION_S);
 	const [typingAgents, setTypingAgents] = useState<Map<string, string>>(
 		new Map()
 	);
 	const [isLeavingRoom, setIsLeavingRoom] = useState(false);
 	const [copiedRoomId, setCopiedRoomId] = useState(false);
+	const resultsFetchedRef = useRef(false);
 
+	// Sync timer with room.createdAt on first load
+	useEffect(() => {
+		if (!room?.createdAt) return;
+		const elapsed = Math.floor((Date.now() - new Date(room.createdAt).getTime()) / 1000);
+		setTimer(Math.max(0, GAME_DURATION_S - elapsed));
+	}, [room?.createdAt]);
+
+	// Count down every second
 	useEffect(() => {
 		const id = setInterval(() => setTimer(t => (t > 0 ? t - 1 : 0)), 1000);
 		return () => clearInterval(id);
 	}, []);
+
+	// Fetch and show results when timer ends
+	useEffect(() => {
+		if (timer !== 0 || resultsFetchedRef.current || !room?.id) return;
+		resultsFetchedRef.current = true;
+
+		void (async () => {
+			await new Promise(resolve => setTimeout(resolve, 1500));
+			try {
+				const results = await roomService.getRoomResults(room.id);
+				let text: string;
+				if (!results.votedOut) {
+					text = "Time's up! No one was voted out.";
+				} else if (results.votedOut.type === 'HUMAN') {
+					text = `Time's up! ${results.votedOut.displayName} was voted out — they were the hidden human. Agents win!`;
+				} else {
+					text = `Time's up! ${results.votedOut.displayName} was voted out — they were an AI. The human survives!`;
+				}
+				setMessages(prev => [
+					...prev,
+					{ id: `result-${Date.now()}`, sender: 'SYSTEM', type: 'system', eventType: 'result' as const, text },
+				]);
+			} catch {
+				setMessages(prev => [
+					...prev,
+					{ id: `result-${Date.now()}`, sender: 'SYSTEM', type: 'system', eventType: 'result' as const, text: "Time's up! Could not load results." },
+				]);
+			}
+		})();
+	}, [timer, room?.id]);
 
 	// Load message history on mount
 	useEffect(() => {
@@ -221,17 +269,15 @@ export default function HiddenHumanCore({
 		}
 	};
 
-	const handleRaiseSuspicion = (player: ChatPlayer) => {
-		setMessages(prev => [
-			...prev,
-			{
-				id: String(prev.length + 1),
-				sender: 'SYSTEM',
-				type: 'system',
-				text: `You raised suspicion on ${player.name}.`,
-				eventType: 'accusation' as const,
-			},
-		]);
+	const handleVote = async (player: ChatPlayer) => {
+		if (!room?.id || !currentParticipant?.id) return;
+		try {
+			await roomService.castVote(room.id, currentParticipant.id, player.id);
+		} catch (error) {
+			setMessagesError(
+				error instanceof Error ? error.message : 'Failed to cast vote.'
+			);
+		}
 	};
 
 	const handleCopyRoomId = async () => {
@@ -400,7 +446,7 @@ export default function HiddenHumanCore({
 						}}
 						players={chatPlayers}
 						onSend={text => void handleSend(text)}
-						onRaiseSuspicion={handleRaiseSuspicion}
+						onVote={player => void handleVote(player)}
 						placeholder="Say something… blend in."
 						disabled={!room || !currentParticipant}
 					/>

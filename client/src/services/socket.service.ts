@@ -49,6 +49,14 @@ class SocketService {
 	offAgentStopTyping() {
 		this.socket?.off('agent:stop-typing');
 	}
+
+	onVoteCast(callback: (data: { voterName: string }) => void) {
+		this.socket?.on('vote:cast', callback);
+	}
+
+	offVoteCast() {
+		this.socket?.off('vote:cast');
+	}
 }
 
 export const socketService = new SocketService();

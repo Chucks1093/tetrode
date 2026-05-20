@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Flag, Send } from 'lucide-react';
+import { Send, Vote } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,7 @@ interface ChatInputProps {
 	currentUser?: { name: string; initials: string; avatarUrl?: string };
 	players?: ChatPlayer[];
 	onSend?: (message: string) => void;
-	onRaiseSuspicion?: (player: ChatPlayer) => void;
+	onVote?: (player: ChatPlayer) => void;
 	placeholder?: string;
 	disabled?: boolean;
 }
@@ -37,18 +37,18 @@ export function ChatInput({
 	currentUser = { name: 'You', initials: 'YO' },
 	players = [],
 	onSend,
-	onRaiseSuspicion,
+	onVote,
 	placeholder = 'Say something… blend in.',
 	disabled = false,
 }: ChatInputProps) {
 	const [value, setValue] = useState('');
-	const [suspicionOpen, setSuspicionOpen] = useState(false);
+	const [voteOpen, setVoteOpen] = useState(false);
 
 	const canSend = value.trim().length > 0 && !disabled;
 
 	const handleSelectPlayer = (player: ChatPlayer) => {
-		onRaiseSuspicion?.(player);
-		setSuspicionOpen(false);
+		onVote?.(player);
+		setVoteOpen(false);
 	};
 
 	const handleSend = () => {
@@ -99,22 +99,22 @@ export function ChatInput({
 					)}
 				/>
 
-				{/* Raise Suspicion */}
-				<Popover open={suspicionOpen} onOpenChange={setSuspicionOpen}>
+				{/* Vote */}
+				<Popover open={voteOpen} onOpenChange={setVoteOpen}>
 					<PopoverTrigger asChild>
 						<Button
 							variant="ghost"
 							size="icon"
-							aria-label="Raise suspicion on a player"
+							aria-label="Vote for a player"
 							disabled={disabled}
 							className={cn(
 								'h-8 w-8 shrink-0 rounded-xl transition-colors',
-								suspicionOpen
+								voteOpen
 									? 'bg-terracotta/20 text-terracotta-bright'
 									: 'text-text-muted hover:bg-terracotta/10 hover:text-terracotta-bright'
 							)}
 						>
-							<Flag className="h-4 w-4" />
+							<Vote className="h-4 w-4" />
 						</Button>
 					</PopoverTrigger>
 
@@ -124,9 +124,9 @@ export function ChatInput({
 						className="w-52 rounded-xl border-surface-3 bg-surface-1 p-1 shadow-xl"
 					>
 						<div className="flex items-center gap-2 px-3 py-2">
-							<Flag className="h-3 w-3 shrink-0 text-terracotta-bright" strokeWidth={2.5} />
+							<Vote className="h-3 w-3 shrink-0 text-terracotta-bright" strokeWidth={2.5} />
 							<p className="font-ps2p text-[9px] uppercase tracking-widest text-terracotta-bright">
-								Raise Suspicion
+								Vote
 							</p>
 						</div>
 						<div className="mx-2 mb-1 h-px bg-surface-3" />

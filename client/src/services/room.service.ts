@@ -3,6 +3,12 @@ import { BaseApiService, type APIResponse } from './api.service';
 export type RoomStatus = 'WAITING' | 'ACTIVE' | 'FINISHED';
 export type ParticipantType = 'HUMAN' | 'AI';
 
+export interface RoomResults {
+	votedOut: { displayName: string; type: ParticipantType; count: number } | null;
+	votes: Array<{ id: string; displayName: string; type: ParticipantType; count: number }>;
+	totalVotes: number;
+}
+
 export interface RoomParticipant {
 	id: string;
 	roomId: string;
@@ -112,6 +118,32 @@ class RoomService extends BaseApiService {
 			>(`/rooms/${roomId}/leave`, {
 				participantId,
 			});
+			return response.data.data;
+		} catch (error) {
+			throw this.handleError(error);
+		}
+	}
+
+	async castVote(
+		roomId: string,
+		voterParticipantId: string,
+		targetParticipantId: string
+	): Promise<void> {
+		try {
+			await this.api.post(`/rooms/${roomId}/votes`, {
+				voterParticipantId,
+				targetParticipantId,
+			});
+		} catch (error) {
+			throw this.handleError(error);
+		}
+	}
+
+	async getRoomResults(roomId: string): Promise<RoomResults> {
+		try {
+			const response = await this.api.get<APIResponse<RoomResults>>(
+				`/rooms/${roomId}/results`
+			);
 			return response.data.data;
 		} catch (error) {
 			throw this.handleError(error);
