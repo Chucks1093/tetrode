@@ -15,9 +15,9 @@ import { findRoomWithParticipants, serializeRoom } from './room.utils';
 import { buildRoomStartPrompt, buildHiddenHumanAgentPrompt, pickAgentNames, serializeChatMessage } from '../chat/chat.utils';
 
 // Characters per second a human typist produces — controls how long typing indicator shows
-const TYPING_CHARS_PER_SEC = 10;
-const TYPING_MIN_MS = 800;
-const TYPING_MAX_MS = 6000;
+const TYPING_CHARS_PER_SEC = 3;
+const TYPING_MIN_MS = 1500;
+const TYPING_MAX_MS = 15000;
 
 function calcTypingDelay(text: string): number {
    const ms = (text.length / TYPING_CHARS_PER_SEC) * 1000;
@@ -82,37 +82,48 @@ async function agentSaveAndEmit(
            });
 
       const raw = await agentService.promptAgentText(agent.actorId, prompt);
-      const content = raw.replace(/\s+/g, ' ').trim();
+      const parts = raw
+         .split('|')
+         .map(p => p.replace(/\s+/g, ' ').trim())
+         .filter(Boolean);
 
-      if (!content || content.toUpperCase() === 'IGNORE') return;
+      if (parts.length === 0 || parts[0].toUpperCase() === 'IGNORE') return;
 
-      // Show typing indicator for as long as it would take to type this message
-      io.to(roomPublicId).emit('agent:typing', {
-         agentId: agent.publicId,
-         name: agent.displayName,
-      });
-      await new Promise(resolve => setTimeout(resolve, calcTypingDelay(content)));
+      for (let i = 0; i < parts.length; i++) {
+         const content = parts[i]!;
 
-      const saved = await prisma.chatMessage.create({
-         data: {
-            roomId,
-            senderType: ChatSenderType.AI,
-            senderParticipantId: agent.id,
-            content,
-         },
-         include: {
-            room: { select: { publicId: true } },
-            senderParticipant: {
-               select: { publicId: true, displayName: true, type: true },
+         io.to(roomPublicId).emit('agent:typing', {
+            agentId: agent.publicId,
+            name: agent.displayName,
+         });
+         await new Promise(resolve => setTimeout(resolve, calcTypingDelay(content)));
+
+         const saved = await prisma.chatMessage.create({
+            data: {
+               roomId,
+               senderType: ChatSenderType.AI,
+               senderParticipantId: agent.id,
+               content,
             },
-         },
-      });
+            include: {
+               room: { select: { publicId: true } },
+               senderParticipant: {
+                  select: { publicId: true, displayName: true, type: true },
+               },
+            },
+         });
 
-      const serialized = serializeChatMessage(saved);
+         const serialized = serializeChatMessage(saved);
 
-      io.to(roomPublicId).emit('agent:stop-typing', { agentId: agent.publicId });
-      io.to(roomPublicId).emit('message:new', serialized);
-      emitRoomMessage(roomPublicId, serialized);
+         io.to(roomPublicId).emit('agent:stop-typing', { agentId: agent.publicId });
+         io.to(roomPublicId).emit('message:new', serialized);
+         emitRoomMessage(roomPublicId, serialized);
+
+         // Small pause between parts before typing the next one
+         if (i < parts.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+         }
+      }
    } catch (error) {
       console.error(`Agent ${agent.displayName} failed:`, error);
       io.to(roomPublicId).emit('agent:stop-typing', { agentId: agent.publicId });

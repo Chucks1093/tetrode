@@ -124,7 +124,7 @@ Room: ${participantList}
 
 The room just opened. Say something to kick things off. One sentence only.
 
-Write like you are texting. Simple words. Sound like a Nigerian but do not use pidgin. No dashes, no hyphens, no ellipses. Emojis are fine. Do not mention being an AI.
+Write like you are texting. Use only the most basic everyday words, nothing complex. No dashes, no hyphens, no ellipses. Use emojis rarely, only when it really fits, not in every message. Do not mention being an AI. You can split your reply into multiple short messages using a pipe character. Each part must be 80 characters or less. Example: Okay wait| who said that| not me. You can split even short replies if you want. Do not use the pipe for anything else.
 
 ${input.agentName}:`;
 }
@@ -158,7 +158,7 @@ Room: ${participantList}
 ${transcript ? `Earlier:\n${transcript}\n\n` : ''}Last message:
 ${lastMessage.senderName}: ${lastMessage.content}
 
-Reply as ${input.agentName}. One sentence, two at most. Write like you are texting. Casual, short, simple words. Sound like a Nigerian but do not use pidgin. No dashes, no hyphens, no ellipses. You can use emojis when it feels natural. Respond to the last message, or say what is on your mind.
+Reply as ${input.agentName}. One sentence, two at most. Write like you are texting. Casual, short, basic everyday words only, nothing complex. No dashes, no hyphens, no ellipses. Use emojis rarely, only when it really fits, not in every message. Respond to the last message, or say what is on your mind. You can split your reply into multiple short messages using a pipe character. Each part must be 80 characters or less. Example: Okay wait| who said that| not me. You can split even short replies if you want. Do not use the pipe for anything else.
 
 If you have nothing worth saying right now, reply with just: IGNORE
 
