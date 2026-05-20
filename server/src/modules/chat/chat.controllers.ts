@@ -1,85 +1,13 @@
-import { ChatSenderType, ParticipantType } from '@prisma/client';
-import { agentService } from '../../services/agent.service';
-import { io } from '../../socket';
+import { ChatSenderType } from '@prisma/client';
 import { AsyncController } from '../../types/auth.types';
 import { HTTP_STATUS } from '../../utils/logger.utils';
 import { prisma } from '../../utils/prisma.utils';
+import { emitRoomMessage } from '../room/room.bus';
 import { CreateChatMessageSchema, ListChatMessagesQuerySchema } from './chat.schemas';
-import {
-	buildHiddenHumanAgentPrompt,
-	findRoomByPublicId,
-	serializeChatMessage,
-} from './chat.utils';
+import { findRoomByPublicId, serializeChatMessage } from './chat.utils';
 
 function getRouteParam(value: string | string[] | undefined) {
 	return Array.isArray(value) ? value[0] : value;
-}
-
-async function runAgentsInBackground(
-	roomPublicId: string,
-	roomId: string,
-	participants: Array<{
-		id: string;
-		actorId: string;
-		displayName: string;
-		type: ParticipantType;
-	}>
-) {
-	const aiParticipants = participants.filter(
-		p => p.type === ParticipantType.AI && p.actorId
-	);
-	if (aiParticipants.length === 0) return;
-
-	const recentMessages = await prisma.chatMessage.findMany({
-		where: { roomId },
-		include: { senderParticipant: { select: { displayName: true } } },
-		orderBy: { createdAt: 'asc' },
-		take: 15,
-	});
-
-	await Promise.allSettled(
-		aiParticipants.map(async agent => {
-			try {
-				const prompt = buildHiddenHumanAgentPrompt({
-					agentName: agent.displayName,
-					actorId: agent.actorId,
-					participants: participants.map(p => ({
-						displayName: p.displayName,
-						isSelf: p.id === agent.id,
-					})),
-					messages: recentMessages.map(m => ({
-						senderName: m.senderParticipant?.displayName ?? 'Unknown',
-						content: m.content,
-					})),
-				});
-
-				const raw = await agentService.promptAgentText(agent.actorId, prompt);
-				const content = raw.replace(/\s+/g, ' ').trim();
-
-				if (!content || content.toUpperCase() === 'IGNORE') return;
-
-				const saved = await prisma.chatMessage.create({
-					data: {
-						roomId,
-						senderType: ChatSenderType.AI,
-						senderParticipantId: agent.id,
-						content,
-					},
-					include: {
-						room: { select: { publicId: true } },
-						senderParticipant: {
-							select: { publicId: true, displayName: true, type: true },
-						},
-					},
-				});
-
-				// Push directly to the room the moment this agent is done
-				io.to(roomPublicId).emit('message:new', serializeChatMessage(saved));
-			} catch (error) {
-				console.error(`Agent ${agent.displayName} failed:`, error);
-			}
-		})
-	);
 }
 
 // ── Controllers ───────────────────────────────────────────────────────────────
@@ -166,9 +94,7 @@ export const httpCreateChatMessage: AsyncController = async (req, res, next) => 
 		}
 
 		const senderType =
-			participant.type === ParticipantType.AI
-				? ChatSenderType.AI
-				: ChatSenderType.HUMAN;
+			participant.type === 'AI' ? ChatSenderType.AI : ChatSenderType.HUMAN;
 
 		const message = await prisma.chatMessage.create({
 			data: {
@@ -187,21 +113,15 @@ export const httpCreateChatMessage: AsyncController = async (req, res, next) => 
 
 		const serialized = serializeChatMessage(message);
 
-		// Respond immediately — sender gets their own message via HTTP, not socket
+		// Sender gets their message back via HTTP — not socket — to avoid duplicate
 		res.status(HTTP_STATUS.CREATED).json({
 			success: true,
 			message: 'Chat message created successfully',
 			data: { message: serialized },
 		});
 
-		// Agents run in background, each emits when ready
-		if (room.gameId === 'the-hidden-human' && senderType === ChatSenderType.HUMAN) {
-			const participants = await prisma.participant.findMany({
-				where: { roomId: room.id },
-				orderBy: { joinedAt: 'asc' },
-			});
-			void runAgentsInBackground(room.publicId, room.id, participants);
-		}
+		// Notify agent subscribers — they decide independently whether to respond
+		emitRoomMessage(room.publicId, serialized);
 	} catch (error) {
 		next(error);
 	}

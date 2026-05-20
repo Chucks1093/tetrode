@@ -15,6 +15,7 @@
       "lint": "eslint . --ext .js,.ts,.jsx,.tsx",
       "lint:fix": "eslint . --ext .js,.ts,.jsx,.tsx --fix",
       "agent:test": "ts-node src/scripts/test-opencode-agent.ts",
+      "agent:delete-all": "ts-node src/scripts/delete-all-agents.ts",
       "comments:reply": "ts-node src/scripts/reply-comments.ts",
       "env:sync:production": "bash ./scripts/sync-prod-env.sh",
       "generate": "pnpm exec prisma generate",

@@ -33,6 +33,22 @@ class SocketService {
 	offMessage() {
 		this.socket?.off('message:new');
 	}
+
+	onAgentTyping(callback: (data: { agentId: string; name: string }) => void) {
+		this.socket?.on('agent:typing', callback);
+	}
+
+	offAgentTyping() {
+		this.socket?.off('agent:typing');
+	}
+
+	onAgentStopTyping(callback: (data: { agentId: string }) => void) {
+		this.socket?.on('agent:stop-typing', callback);
+	}
+
+	offAgentStopTyping() {
+		this.socket?.off('agent:stop-typing');
+	}
 }
 
 export const socketService = new SocketService();

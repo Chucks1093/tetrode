@@ -82,6 +82,7 @@ export default function HiddenHumanCore({
 	const [messages, setMessages] = useState<FeedMessage[]>([]);
 	const [messagesError, setMessagesError] = useState<string | null>(null);
 	const [timer, setTimer] = useState(INITIAL_TIMER);
+	const [typingAgents, setTypingAgents] = useState<Map<string, string>>(new Map());
 
 	useEffect(() => {
 		const id = setInterval(() => setTimer(t => (t > 0 ? t - 1 : 0)), 1000);
@@ -137,8 +138,22 @@ export default function HiddenHumanCore({
 			});
 		});
 
+		socketService.onAgentTyping(({ agentId, name }) => {
+			setTypingAgents(prev => new Map(prev).set(agentId, name));
+		});
+
+		socketService.onAgentStopTyping(({ agentId }) => {
+			setTypingAgents(prev => {
+				const next = new Map(prev);
+				next.delete(agentId);
+				return next;
+			});
+		});
+
 		return () => {
 			socketService.offMessage();
+			socketService.offAgentTyping();
+			socketService.offAgentStopTyping();
 			socketService.leaveRoom(room.id);
 		};
 	}, [room?.id, currentParticipant?.id]);
@@ -242,7 +257,7 @@ export default function HiddenHumanCore({
 				{messagesError ? (
 					<p className="py-2 text-sm text-red-400">{messagesError}</p>
 				) : null}
-				<ChatFeed messages={messages} />
+				<ChatFeed messages={messages} typingAgents={typingAgents} />
 			</div>
 
 			<div className="fixed inset-x-0 bottom-0 z-40 pb-2 pt-4 backdrop-blur">

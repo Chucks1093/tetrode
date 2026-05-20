@@ -9,3 +9,5 @@ export type { FeedMessage } from './ChatFeed';
 
 export { ChatInput } from './ChatInput';
 export type { ChatPlayer } from './ChatInput';
+
+export { TypingRow } from './TypingRow';
