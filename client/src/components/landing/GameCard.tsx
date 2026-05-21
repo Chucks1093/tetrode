@@ -24,7 +24,7 @@ export default function GameCard(props: GameCardProps) {
 				<img
 					src={props.imageUrl}
 					alt={props.title}
-					className="h-full w-full object-cover brightness-90 pointer-events-none"
+					className="h-full w-full object-cover brightness-90 pointer-events-none brightness-75"
 				/>
 
 				{/* Status badge */}

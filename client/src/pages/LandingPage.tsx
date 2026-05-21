@@ -145,13 +145,13 @@ export default function LandingPage() {
 									Enter the Arena
 									<ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
 								</Link>
-								<button
-									type="button"
+								<Link
+									to="/about"
 									className="flex items-center gap-2.5 rounded-sm border border-surface-3 bg-surface-1 px-7 py-3.5 font-ps2p text-[9px] uppercase tracking-wider text-text-muted transition-all hover:border-surface-4 hover:bg-surface-2 hover:text-text-primary"
 								>
 									<Info className="size-3.5" />
 									How It Works
-								</button>
+								</Link>
 							</div>
 
 							{/* Stats */}

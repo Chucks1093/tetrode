@@ -453,7 +453,13 @@ export default function AuthModal({
 				<div className="border-t border-surface-3 bg-surface-2 px-6 py-3 text-center">
 					<p className="text-[11px] text-text-muted">
 						{isWalletStep ? (
-							<>You can export this wallet later from your profile.</>
+							<>
+								To export your private key, go to your{' '}
+								<span className="font-medium text-text-primary">Profile</span>.
+								Your wallet is secured and managed by{' '}
+								<span className="font-medium text-text-primary">Privy</span>{' '}
+								— we never store or have access to your wallet details.
+							</>
 						) : isOnboarding ? (
 							<>
 								Wrong account?{' '}

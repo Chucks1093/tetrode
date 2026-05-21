@@ -4,6 +4,7 @@ import { Fragment } from 'react/jsx-runtime';
 import { Toaster } from 'react-hot-toast';
 
 import LandingPage from './pages/LandingPage';
+import AboutPage from './pages/AboutPage';
 import AuthRoute from './pages/auth/AuthRoute';
 import OAuthCallback from './pages/auth/OAuthCallback';
 import GameCore from './pages/games/GameCore';
@@ -33,6 +34,11 @@ const router = createBrowserRouter([
 				),
 			},
 		],
+	},
+	{
+		path: '/about',
+		element: <AboutPage />,
+		errorElement: <GlobalErrorPage />,
 	},
 	{
 		path: '/auth/callback',

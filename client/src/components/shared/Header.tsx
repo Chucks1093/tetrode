@@ -66,10 +66,17 @@ export default function Header() {
 
 				{/* Nav */}
 				<nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-8 text-xs text-text-muted md:flex">
-					{['Leaderboard', 'Twitter', 'Community', 'About'].map(label => (
+					{[
+						{ label: 'Leaderboard', href: '#' },
+						{ label: 'Twitter', href: 'https://x.com/tetrodegames' },
+						{ label: 'Telegram', href: 'https://t.me/tetrodegames' },
+						{ label: 'About', href: '/about' },
+					].map(({ label, href }) => (
 						<a
 							key={label}
-							href="#"
+							href={href}
+							target={href === '#' ? undefined : '_blank'}
+							rel={href === '#' ? undefined : 'noopener noreferrer'}
 							className="uppercase tracking-widest transition-colors hover:text-text-primary"
 						>
 							{label}
