@@ -1,6 +1,7 @@
 'use client';
 
-import { Check, Copy, DoorOpen, MoreHorizontal, Users } from 'lucide-react';
+import makeBlockie from 'ethereum-blockies-base64';
+import { Check, ChevronDown, Copy, DoorOpen } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ChatFeed, ChatInput } from '@/components/shared/chat';
@@ -12,11 +13,18 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { chatService, type RoomChatMessage } from '@/services/chat.service';
 import { socketService } from '@/services/socket.service';
 import { playerService } from '@/services/player.service';
 import { roomService, type Room } from '@/services/room.service';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 const GAME_DURATION_S = 300;
 
@@ -88,6 +96,8 @@ export default function HiddenHumanCore({
 }: HiddenHumanCoreProps) {
 	const navigate = useNavigate();
 	const playerIdentity = playerService.getIdentity();
+	const authUser = useAuthStore(s => s.user);
+	const blockieSeed = authUser?.email ?? authUser?.id ?? playerIdentity.actorId;
 	const currentParticipant =
 		room?.participants?.find(
 			participant => participant.actorId === playerIdentity.actorId
@@ -309,23 +319,46 @@ export default function HiddenHumanCore({
 	return (
 		<section className="flex min-h-screen flex-col gap-3 pb-20">
 			<header className="fixed inset-x-0 top-0 z-40 border-b border-surface-3 bg-surface-1/90 backdrop-blur">
-				<div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-					<div>
+				<div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
+					{/* Left: title + stacked participants */}
+					<div className="flex items-center gap-3">
 						<p className="font-ps2p text-sm uppercase text-gold-base">
 							The Hidden Human
 						</p>
+
+						{room?.participants && room.participants.length > 0 && (
+							<TooltipProvider>
+								<div className="flex items-center">
+									{room.participants.slice(0, 3).map((p, i) => (
+										<Tooltip key={p.id}>
+											<TooltipTrigger asChild>
+												<div
+													className="relative flex h-7 w-7 cursor-default items-center justify-center rounded-full border-2 border-surface-1 bg-surface-3 text-[9px] font-semibold text-text-primary"
+													style={{ marginLeft: i === 0 ? 0 : '-8px', zIndex: 3 - i }}
+												>
+													{initials(p.displayName)}
+												</div>
+											</TooltipTrigger>
+											<TooltipContent className="rounded-md border-surface-3 bg-surface-2 px-2.5 py-1 text-[11px] text-text-primary shadow-lg">
+												{p.displayName}
+											</TooltipContent>
+										</Tooltip>
+									))}
+									{room.participants.length > 3 && (
+										<div
+											className="relative flex h-7 w-7 items-center justify-center rounded-full border-2 border-surface-1 bg-surface-4 text-[9px] text-text-muted"
+											style={{ marginLeft: '-8px', zIndex: 0 }}
+										>
+											+{room.participants.length - 3}
+										</div>
+									)}
+								</div>
+							</TooltipProvider>
+						)}
 					</div>
 
-					<div className="flex items-center gap-4 text-xs sm:gap-6">
-						<p className="max-w-[11rem] truncate uppercase tracking-widest text-text-muted">
-							{currentParticipant?.displayName ??
-								playerIdentity.displayName}
-						</p>
-						<p className="uppercase tracking-widest text-text-muted">
-							{room
-								? `${room.participants?.length ?? 0} Players`
-								: 'Room'}
-						</p>
+					<div className="flex items-center gap-3 sm:gap-4">
+						{/* Timer */}
 						<p
 							className={cn(
 								'font-ps2p text-sm tabular-nums',
@@ -336,85 +369,61 @@ export default function HiddenHumanCore({
 						>
 							{fmtTimer(timer)}
 						</p>
+
+						{/* Blockie avatar + dropdown */}
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
 								<button
 									type="button"
-									className="flex size-9 items-center justify-center rounded-sm border border-surface-3 bg-surface-2 text-text-muted transition-colors hover:border-surface-4 hover:bg-surface-3 hover:text-text-primary"
+									className="flex items-center gap-1.5 rounded-full border border-surface-3 bg-surface-2 py-1 pl-1 pr-2 transition-colors hover:border-surface-4 hover:bg-surface-3"
 									aria-label="Open room menu"
 								>
-									<MoreHorizontal className="size-4" />
+									<img
+										src={makeBlockie(blockieSeed)}
+										alt="avatar"
+										className="h-7 w-7 rounded-full"
+									/>
+									<ChevronDown className="size-3 text-text-muted" />
 								</button>
 							</DropdownMenuTrigger>
 
 							<DropdownMenuContent
 								align="end"
 								sideOffset={8}
-								className="w-60 rounded-sm border border-surface-3 bg-surface-1 p-1 shadow-xl"
+								className="w-52 rounded-sm border border-surface-3 bg-surface-1 p-1 shadow-xl"
 							>
-								<div className="px-3 py-3">
+								<div className="px-3 py-2.5">
 									<p className="font-ps2p text-[8px] uppercase tracking-wider text-gold-base">
-										Room Menu
+										The Hidden Human
 									</p>
-									<p className="mt-2 text-[11px] text-text-muted">
-										Manage your current Hidden Human room.
+									<p className="mt-1.5 text-[11px] text-text-muted">
+										{room?.participants?.length ?? 0} players · {fmtTimer(timer)} left
 									</p>
-								</div>
-
-								<DropdownMenuSeparator className="bg-surface-3" />
-
-								<div className="flex items-center justify-between px-3 py-2.5">
-									<div className="flex items-center gap-2">
-										<Users className="size-3.5 text-text-muted" />
-										<div>
-											<p className="font-ps2p text-[7px] uppercase tracking-wider text-text-muted">
-												Players
-											</p>
-											<p className="mt-1 text-[11px] text-text-secondary">
-												{room?.participants?.length ?? 0} in room
-											</p>
-										</div>
-									</div>
-								</div>
-
-								<div className="flex items-center justify-between px-3 py-2.5">
-									<div>
-										<p className="font-ps2p text-[7px] uppercase tracking-wider text-text-muted">
-											Room Id
-										</p>
-										<p className="mt-1 text-[11px] text-text-secondary">
-											{room?.id.slice(0, 8)}
-										</p>
-									</div>
-									<button
-										type="button"
-										onClick={e => {
-											e.stopPropagation();
-											void handleCopyRoomId();
-										}}
-										className="flex items-center gap-1 rounded-sm border border-surface-3 px-2 py-1 font-ps2p text-[7px] uppercase tracking-wider text-text-muted transition-colors hover:border-surface-4 hover:text-text-primary"
-										aria-label="Copy room id"
-									>
-										{copiedRoomId ? (
-											<Check className="size-2.5 text-success" />
-										) : (
-											<Copy className="size-2.5" />
-										)}
-										{copiedRoomId ? 'Copied' : 'Copy'}
-									</button>
 								</div>
 
 								<DropdownMenuSeparator className="bg-surface-3" />
 
 								<DropdownMenuItem
-									className="mb-1 flex cursor-pointer items-center gap-2.5 rounded-sm px-3 py-2.5 font-ps2p text-[8px] uppercase tracking-wider text-terracotta-bright transition-colors hover:bg-terracotta/10 focus:bg-terracotta/10 focus:text-terracotta-bright"
-									disabled={
-										isLeavingRoom || !room || !currentParticipant
-									}
+									className="flex cursor-pointer items-center gap-2.5 rounded-sm px-3 py-2.5 text-[12px] text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary focus:bg-surface-2 focus:text-text-primary"
+									onClick={() => void handleCopyRoomId()}
+								>
+									{copiedRoomId ? (
+										<Check className="size-3.5 shrink-0 text-success" />
+									) : (
+										<Copy className="size-3.5 shrink-0" />
+									)}
+									{copiedRoomId ? 'Copied!' : 'Copy Room ID'}
+								</DropdownMenuItem>
+
+								<DropdownMenuSeparator className="bg-surface-3" />
+
+								<DropdownMenuItem
+									className="mb-1 flex cursor-pointer items-center gap-2.5 rounded-sm px-3 py-2.5 text-[12px] text-terracotta-bright transition-colors hover:bg-terracotta/10 focus:bg-terracotta/10 focus:text-terracotta-bright"
+									disabled={isLeavingRoom || !room || !currentParticipant}
 									onClick={() => void handleLeaveRoom()}
 								>
 									<DoorOpen className="size-3.5 shrink-0" />
-									{isLeavingRoom ? 'Leaving...' : 'Leave Room'}
+									{isLeavingRoom ? 'Leaving…' : 'Leave Room'}
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>

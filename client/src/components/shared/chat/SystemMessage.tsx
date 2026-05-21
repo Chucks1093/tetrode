@@ -47,8 +47,7 @@ export function SystemMessage({ id = 'sys', text, eventType = 'default' }: Syste
 	if (eventType === 'vote') {
 		return (
 			<div className="flex justify-center py-0.5">
-				<span className="flex items-center gap-2 rounded-full border border-teal/30 bg-teal/10 px-3 py-1 font-ps2p text-[8px] tracking-wide text-teal-bright">
-					<span className="h-1.5 w-1.5 rounded-full bg-teal-bright" />
+				<span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-[11px] text-blue-400">
 					{text}
 				</span>
 			</div>
