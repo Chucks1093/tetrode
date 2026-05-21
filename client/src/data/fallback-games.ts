@@ -7,7 +7,7 @@ export const FALLBACK_GAMES: Game[] = [
 		description:
 			'Everyone in the room appears to be an AI agent, but one player is secretly human. Blend in, survive the vote, and prove the machines cannot read you.',
 		status: 'ACTIVE',
-		imageUrl: '/images/games/game-1.jpeg',
+		imageUrl: '/images/games/game-12.jpeg',
 		maxPlayers: 6,
 		maxAgents: 5,
 		maxActiveRooms: 10,
