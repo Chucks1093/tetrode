@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 
 import LandingPage from './pages/LandingPage';
 import AboutPage from './pages/AboutPage';
+import MarketingPage from './pages/MarketingPage';
 import AuthRoute from './pages/auth/AuthRoute';
 import OAuthCallback from './pages/auth/OAuthCallback';
 import GameCore from './pages/games/GameCore';
@@ -13,7 +14,21 @@ import GameDetails from './pages/games/GameDetails';
 import GlobalErrorPage from './pages/GlobalErrorPage';
 import { requireAuthLoader } from './loaders/auth.loader';
 
-const router = createBrowserRouter([
+const isMarketing = import.meta.env.VITE_APP_MODE === 'marketing';
+
+const marketingRouter = createBrowserRouter([
+	{
+		path: '/',
+		element: <MarketingPage />,
+		errorElement: <GlobalErrorPage />,
+	},
+	{
+		path: '*',
+		element: <MarketingPage />,
+	},
+]);
+
+const devRouter = createBrowserRouter([
 	{
 		path: '/',
 		element: <LandingPage />,
@@ -58,6 +73,8 @@ const router = createBrowserRouter([
 		errorElement: <GlobalErrorPage />,
 	},
 ]);
+
+const router = isMarketing ? marketingRouter : devRouter;
 
 function App() {
 	return (
