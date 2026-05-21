@@ -16,7 +16,7 @@ export function serializeGame(game: {
    return {
       id: game.publicId,
       title: game.title,
-      description: game.description,
+      description: game.status === GameStatus.COMING_SOON ? null : game.description,
       status: game.status,
       imageUrl: game.imageUrl,
       maxPlayers: game.maxPlayers,

@@ -5,7 +5,7 @@ export type GameStatus = 'ACTIVE' | 'COMING_SOON';
 export interface Game {
 	id: string;
 	title: string;
-	description: string;
+	description: string | null;
 	status: GameStatus;
 	imageUrl: string;
 	maxPlayers: number;

@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Game } from '@/services/game.service';
+import { padNumber, maskText } from '@/utils/number.utils';
+
+const COMING_SOON_PLACEHOLDER = 'All players appear to be AI agents, but one is secretly human and must survive the vote at the end of every round.';
 
 interface GameDetailsProps {
 	game: Game;
@@ -71,8 +74,8 @@ export default function GameDetails({
 				</h1>
 
 				{/* Description */}
-				<p className="text-sm leading-7 text-text-muted sm:text-base sm:leading-8">
-					{game.description}
+				<p className={`leading-7 text-text-muted sm:leading-8 ${isActive ? 'text-sm sm:text-base' : 'text-base sm:text-lg'}`}>
+					{isActive ? game.description : maskText(COMING_SOON_PLACEHOLDER)}
 				</p>
 
 				{/* Stats grid */}
@@ -85,12 +88,12 @@ export default function GameDetails({
 						},
 						{
 							label: 'Max Players',
-							value: String(game.maxPlayers),
+							value: padNumber(game.maxPlayers),
 							unit: '',
 						},
 						{
 							label: 'AI Agents',
-							value: String(game.maxAgents),
+							value: padNumber(game.maxAgents),
 							unit: '',
 						},
 						{

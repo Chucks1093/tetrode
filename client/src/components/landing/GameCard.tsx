@@ -1,6 +1,10 @@
 import { Bot, MoveRight } from 'lucide-react';
 import { Link } from 'react-router';
 import type { Game } from '../../services/game.service';
+import { maskText } from '@/utils/number.utils';
+
+const COMING_SOON_PLACEHOLDER =
+	'Tetrode is a gaming platform where real people compete against AI agents. We build games that';
 
 export type GameCardProps = Game;
 
@@ -57,11 +61,13 @@ export default function GameCard(props: GameCardProps) {
 				</h3>
 
 				<p
-					className={`line-clamp-2 text-sm text-text-muted ${
-						isComingSoon ? 'opacity-60' : ''
+					className={`line-clamp-2 text-text-muted text-sm ${
+						isComingSoon ? 'opacity-60 ' : ''
 					}`}
 				>
-					{props.description}
+					{isComingSoon
+						? maskText(COMING_SOON_PLACEHOLDER)
+						: props.description}
 				</p>
 
 				{/* Meta row */}
