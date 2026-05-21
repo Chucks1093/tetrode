@@ -1,5 +1,5 @@
 import makeBlockie from 'ethereum-blockies-base64';
-import { Check, Copy, LogIn, LogOut, Settings, User } from 'lucide-react';
+import { Check, Copy, LogIn, LogOut, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/useAuthStore';
+import ProfileModal from './ProfileModal';
 
 export default function Header() {
 	const navigate = useNavigate();
@@ -20,6 +21,7 @@ export default function Header() {
 	);
 	const [isAuthBusy, setIsAuthBusy] = useState(false);
 	const [copied, setCopied] = useState(false);
+	const [profileOpen, setProfileOpen] = useState(false);
 
 	const copyWallet = async () => {
 		if (!user?.walletAddress) return;
@@ -46,6 +48,7 @@ export default function Header() {
 	const blockie = user ? makeBlockie(user.email ?? user.id) : null;
 
 	return (
+		<>
 		<header className="fixed inset-x-0 top-0 z-50 border-b border-surface-3 bg-surface-0/90 backdrop-blur">
 			<div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
 				{/* Logo */}
@@ -120,53 +123,37 @@ export default function Header() {
 
 								<DropdownMenuSeparator className="bg-surface-3" />
 
-								{/* Wallet address row */}
+								{/* Wallet address display */}
 								{user.walletAddress && (
-									<div className="flex items-center justify-between px-3 py-2.5">
-										<div className="flex items-center gap-2">
-											<span className="font-ps2p text-[7px] uppercase tracking-wider text-text-muted">
-												Wallet
-											</span>
-											<span className="font-ps2p text-[7px] text-text-secondary">
-												{user.walletAddress.slice(0, 6)}…
-												{user.walletAddress.slice(-4)}
-											</span>
-										</div>
-										<button
-											type="button"
-											onClick={e => {
-												e.stopPropagation();
-												void copyWallet();
-											}}
-											className="flex items-center gap-1 rounded-sm border border-surface-3 px-2 py-1 font-ps2p text-[7px] uppercase tracking-wider text-text-muted transition-colors hover:border-surface-4 hover:text-text-primary"
-											aria-label="Copy wallet address"
-										>
-											{copied ? (
-												<Check className="size-2.5 text-success" />
-											) : (
-												<Copy className="size-2.5" />
-											)}
-											{copied ? 'Copied' : 'Copy'}
-										</button>
+									<div className="px-3 py-2">
+										<span className="font-ps2p text-[7px] uppercase tracking-wider text-text-muted">
+											{user.walletAddress.slice(0, 6)}…{user.walletAddress.slice(-4)}
+										</span>
 									</div>
 								)}
 
 								<DropdownMenuSeparator className="bg-surface-3" />
 
-								<DropdownMenuItem
-									className="mt-1 flex cursor-pointer items-center gap-2.5 rounded-sm px-3 py-2.5 font-ps2p text-[8px] uppercase tracking-wider text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary focus:bg-surface-2 focus:text-text-primary"
-									onClick={() => navigate('/profile')}
-								>
-									<User className="size-3.5 shrink-0" />
-									Profile
-								</DropdownMenuItem>
+								{user.walletAddress && (
+									<DropdownMenuItem
+										className="flex cursor-pointer items-center gap-2.5 rounded-sm px-3 py-2.5 font-ps2p text-[8px] uppercase tracking-wider text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary focus:bg-surface-2 focus:text-text-primary"
+										onClick={() => void copyWallet()}
+									>
+										{copied ? (
+											<Check className="size-3.5 shrink-0 text-success" />
+										) : (
+											<Copy className="size-3.5 shrink-0" />
+										)}
+										{copied ? 'Copied!' : 'Copy Wallet'}
+									</DropdownMenuItem>
+								)}
 
 								<DropdownMenuItem
 									className="flex cursor-pointer items-center gap-2.5 rounded-sm px-3 py-2.5 font-ps2p text-[8px] uppercase tracking-wider text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary focus:bg-surface-2 focus:text-text-primary"
-									onClick={() => navigate('/settings')}
+									onClick={() => setProfileOpen(true)}
 								>
-									<Settings className="size-3.5 shrink-0" />
-									Settings
+									<User className="size-3.5 shrink-0" />
+									Profile
 								</DropdownMenuItem>
 
 								<DropdownMenuSeparator className="bg-surface-3" />
@@ -194,5 +181,8 @@ export default function Header() {
 				</div>
 			</div>
 		</header>
+
+		<ProfileModal open={profileOpen} onOpenChange={setProfileOpen} />
+		</>
 	);
 }

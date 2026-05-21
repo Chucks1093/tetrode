@@ -1,5 +1,6 @@
 import { redirect } from 'react-router';
 import { authService } from '@/services/auth.service';
+import { ApiError } from '@/services/api.service';
 
 export async function requireAuthLoader({
 	request,
@@ -27,8 +28,13 @@ export async function requireAuthLoader({
 		}
 
 		return null;
-	} catch {
-		await authService.logout();
-		return redirect(`/auth/signin?redirect=${encodeURIComponent(targetPath)}`);
+	} catch (error) {
+		// Only force logout on actual auth failures (401/403).
+		// Network errors (server restarting, offline) should not wipe the session.
+		if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+			await authService.logout();
+			return redirect(`/auth/signin?redirect=${encodeURIComponent(targetPath)}`);
+		}
+		return null;
 	}
 }

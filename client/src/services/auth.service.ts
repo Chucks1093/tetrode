@@ -76,14 +76,12 @@ class AuthService extends BaseApiService {
 		return localStorage.getItem(this.SESSION_TOKEN_KEY);
 	}
 
-	// Login - POST /profile/login
 	async login(email: string, password: string): Promise<User> {
 		try {
 			const response = await this.api.post<APIResponse<LoginResponse>>(
 				'/profile/login',
 				{ email, password }
 			);
-
 			const profile = response.data.data.profile;
 			this.setUser(profile);
 			this.setSessionToken(response.data.data.sessionToken);
@@ -93,14 +91,12 @@ class AuthService extends BaseApiService {
 		}
 	}
 
-	// Signup - POST /profile/register
 	async register(input: RegisterData): Promise<User> {
 		try {
 			const response = await this.api.post<APIResponse<LoginResponse>>(
 				'/profile/register',
 				input
 			);
-
 			const profile = response.data.data.profile;
 			this.setUser(profile);
 			return profile;
@@ -126,9 +122,10 @@ class AuthService extends BaseApiService {
 
 	async updateProfile(input: UpdateProfileData): Promise<User> {
 		try {
-			const response = await this.api.patch<
-				APIResponse<{ profile: User }>
-			>('/profile', input);
+			const response = await this.api.patch<APIResponse<{ profile: User }>>(
+				'/profile',
+				input
+			);
 			const profile = response.data.data.profile;
 			this.setUser(profile);
 			this.notify();
@@ -140,9 +137,10 @@ class AuthService extends BaseApiService {
 
 	async updateWalletAddress(walletAddress: string): Promise<User> {
 		try {
-			const response = await this.api.patch<
-				APIResponse<{ profile: User }>
-			>('/profile/wallet', { walletAddress });
+			const response = await this.api.patch<APIResponse<{ profile: User }>>(
+				'/profile/wallet',
+				{ walletAddress }
+			);
 			const profile = response.data.data.profile;
 			this.setUser(profile);
 			return profile;
@@ -152,10 +150,7 @@ class AuthService extends BaseApiService {
 	}
 
 	async getPrivyAuthToken(): Promise<string | undefined> {
-		if (!this.isAuthenticated()) {
-			return undefined;
-		}
-
+		if (!this.isAuthenticated()) return undefined;
 		try {
 			const response = await this.api.get<APIResponse<PrivyTokenResponse>>(
 				'/profile/privy/token'
@@ -166,28 +161,6 @@ class AuthService extends BaseApiService {
 			return undefined;
 		}
 	}
-
-	async completeOnboarding(input: {
-		avatarUrl: string;
-		interests: string[];
-	}): Promise<User> {
-		const existingUser = this.getUser();
-
-		if (!existingUser) {
-			throw new Error('No active profile found');
-		}
-
-		const updatedUser: User = {
-			...existingUser,
-			avatarUrl: input.avatarUrl,
-			interests: input.interests,
-		};
-
-		this.setUser(updatedUser);
-		this.notify();
-		return updatedUser;
-	}
-
 
 	async forgotPassword(email: string): Promise<void> {
 		try {
@@ -218,7 +191,6 @@ class AuthService extends BaseApiService {
 		}
 	}
 
-	// Logout - POST /profile/logout
 	async logout(): Promise<void> {
 		try {
 			await this.api.post('/profile/logout');
@@ -230,53 +202,15 @@ class AuthService extends BaseApiService {
 		}
 	}
 
-	// Get profile - GET /profile/me
 	async getProfile(): Promise<User> {
 		try {
-			const response =
-				await this.api.get<APIResponse<User>>('/profile/me');
-
+			const response = await this.api.get<APIResponse<User>>('/profile/me');
 			const user = response.data.data;
 			this.setUser(user);
 			return user;
 		} catch (error) {
 			throw this.handleError(error);
 		}
-	}
-
-	// Request password reset - POST /auth/password-reset/request
-	async requestPasswordReset(email: string): Promise<void> {
-		try {
-			await this.api.post('/profile/password/forgot', { email });
-		} catch (error) {
-			throw this.handleError(error);
-		}
-	}
-
-	// Reset password - POST /auth/password-reset/confirm
-	async resetPassword(token: string, newPassword: string): Promise<void> {
-		try {
-			await this.api.post('/profile/password/reset', {
-				token,
-				newPassword,
-			});
-		} catch (error) {
-			throw this.handleError(error);
-		}
-	}
-
-	// User management
-	setUser(user: User): void {
-		useAuthStore.getState().setUser(user);
-		this.notify();
-	}
-
-	getUser(): User | null {
-		return useAuthStore.getState().user;
-	}
-
-	isAuthenticated(): boolean {
-		return !!this.getUser() && !!this.getSessionToken();
 	}
 
 	handleOAuthCallback(params: URLSearchParams): {
@@ -300,11 +234,7 @@ class AuthService extends BaseApiService {
 			const profile = JSON.parse(profileParam) as User;
 			this.setUser(profile);
 			this.setSessionToken(tokenParam);
-			return {
-				success: true,
-				message: 'Google login successful',
-				profile,
-			};
+			return { success: true, message: 'Google login successful', profile };
 		} catch {
 			return {
 				success: false,
@@ -313,7 +243,20 @@ class AuthService extends BaseApiService {
 		}
 	}
 
-	protected clearAuth(): void {
+	setUser(user: User): void {
+		useAuthStore.getState().setUser(user);
+		this.notify();
+	}
+
+	getUser(): User | null {
+		return useAuthStore.getState().user;
+	}
+
+	isAuthenticated(): boolean {
+		return !!this.getUser() && !!this.getSessionToken();
+	}
+
+	protected override clearAuth(): void {
 		useAuthStore.getState().clearUser();
 		localStorage.removeItem(this.SESSION_TOKEN_KEY);
 	}
