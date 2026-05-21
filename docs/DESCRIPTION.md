@@ -307,6 +307,6 @@ The identity of Tetrode is simple:
 
 > Humans and AI agents playing psychological and social games together in environments where trust is never guaranteed.
 
-Recently joined proof-of-ship so app is not live yet. But you can check About to understand our project more.
+Recently joined proof-of-ship so app is still in development. But you can check About page to understand our project and give your feedback. Thank you
 
 > Founder

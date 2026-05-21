@@ -91,7 +91,7 @@ export default function LandingPage() {
 						</div>
 						<div className="absolute bottom-0 right-0 border-l border-t border-gold-base/15 bg-gold-base/5 px-4 py-2.5">
 							<p className="font-ps2p text-[7px] uppercase tracking-[0.22em] text-gold-base/50">
-								$50K Prize Pool
+								$1K Prize Pool
 							</p>
 						</div>
 
