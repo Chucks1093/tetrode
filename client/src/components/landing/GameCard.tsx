@@ -104,7 +104,7 @@ export default function GameCard(props: GameCardProps) {
 
 				{/* CTA */}
 				<Link
-					to={`/${props.id}`}
+					to={`/games/${props.id}`}
 					aria-disabled={isComingSoon}
 					className={`mt-3 flex w-full items-center justify-center gap-2 rounded-sm px-4 py-3 font-ps2p text-[9px] uppercase tracking-wider transition-all ring-2 ring-offset-2 ring-offset-odin-dark-300 ${
 						isComingSoon

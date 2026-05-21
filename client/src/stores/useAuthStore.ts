@@ -29,7 +29,7 @@ export const useAuthStore = create<AuthStore>()(
 			clearUser: () => set({ user: null }),
 		}),
 		{
-			name: 'proofline_user',
+			name: 'tetrode_user',
 			storage: createJSONStorage(() => localStorage),
 			partialize: state => ({ user: state.user }),
 		}

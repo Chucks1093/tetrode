@@ -121,6 +121,13 @@ export default function GameDetails() {
 			<Header />
 			<div className="mx-auto max-w-6xl px-4 pb-10 pt-26 sm:px-6 sm:pb-14 sm:pt-30">
 				<main className="space-y-8">
+					<Link
+						to="/"
+						className="inline-flex items-center gap-2 rounded-sm border border-surface-3 bg-surface-1 px-5 py-3 font-ps2p text-[9px] uppercase tracking-wider text-text-muted transition-all hover:border-surface-4 hover:text-text-primary"
+					>
+						← Back To Games
+					</Link>
+
 					<GameDetailsCard
 						game={game}
 						onPlay={() => void handlePlay()}
@@ -141,13 +148,6 @@ export default function GameDetails() {
 						</p>
 						{roomError ? <p className="text-sm text-red-400">{roomError}</p> : null}
 					</GameDetailsCard>
-
-					<Link
-						to="/"
-						className="inline-flex items-center gap-2 rounded-sm border border-surface-3 bg-surface-1 px-5 py-3 font-ps2p text-[9px] uppercase tracking-wider text-text-muted transition-all hover:border-surface-4 hover:text-text-primary"
-					>
-						← Back To Games
-					</Link>
 
 					<Footer />
 				</main>

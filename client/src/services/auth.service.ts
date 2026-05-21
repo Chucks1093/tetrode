@@ -34,8 +34,8 @@ export interface LoginData {
 }
 
 class AuthService extends BaseApiService {
-	private SESSION_TOKEN_KEY = 'proofline_session_token';
-	private REDIRECT_AFTER_LOGIN_KEY = 'proofline_redirect_after_login';
+	private SESSION_TOKEN_KEY = 'tetrode_session_token';
+	private REDIRECT_AFTER_LOGIN_KEY = 'tetrode_redirect_after_login';
 	private subscribers = new Set<AuthSubscriber>();
 
 	private setSessionToken(token?: string): void {

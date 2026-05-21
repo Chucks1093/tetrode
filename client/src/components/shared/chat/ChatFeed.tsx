@@ -25,7 +25,7 @@ export function ChatFeed({ messages, typingAgents }: ChatFeedProps) {
 				if (msg.type === 'system') {
 					return (
 						<div key={msg.id} className="w-full">
-							<SystemMessage id={msg.id} text={msg.text} eventType={msg.eventType} />
+							<SystemMessage id={String(msg.id)} text={msg.text} eventType={msg.eventType} />
 						</div>
 					);
 				}

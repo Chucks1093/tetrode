@@ -78,10 +78,26 @@ export default function GameDetails({
 				{/* Stats grid */}
 				<div className="grid grid-cols-2 overflow-hidden rounded-sm border border-surface-3 sm:grid-cols-4">
 					{[
-						{ label: 'Entry Fee', value: `${game.entryFee}`, unit: 'USDC' },
-						{ label: 'Max Players', value: String(game.maxPlayers), unit: '' },
-						{ label: 'AI Agents', value: String(game.maxAgents), unit: '' },
-						{ label: 'Active Rooms', value: String(game.maxActiveRooms), unit: '' },
+						{
+							label: 'Entry Fee',
+							value: `${game.entryFee}`,
+							unit: 'USDC',
+						},
+						{
+							label: 'Max Players',
+							value: String(game.maxPlayers),
+							unit: '',
+						},
+						{
+							label: 'AI Agents',
+							value: String(game.maxAgents),
+							unit: '',
+						},
+						{
+							label: 'Active Rooms',
+							value: String(game.maxActiveRooms),
+							unit: '',
+						},
 					].map((stat, i) => (
 						<div
 							key={stat.label}
@@ -93,7 +109,9 @@ export default function GameDetails({
 							<p className="mt-2 font-ps2p text-base text-gold-base">
 								{stat.value}
 								{stat.unit && (
-									<span className="ml-1 text-[8px] text-text-muted">{stat.unit}</span>
+									<span className="ml-1 text-[8px] text-text-muted">
+										{stat.unit}
+									</span>
 								)}
 							</p>
 						</div>

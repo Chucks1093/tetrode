@@ -18,7 +18,7 @@ const LoginSchema = z.object({
 	password: z.string().min(6, 'Password must be at least 6 characters long'),
 });
 
-const ONBOARDING_ALLOWED_KEY = 'proofline_onboarding_allowed';
+const ONBOARDING_ALLOWED_KEY = 'tetrode_onboarding_allowed';
 
 // Inferred TypeScript type
 type LoginData = z.infer<typeof LoginSchema>;
@@ -35,7 +35,7 @@ function Login() {
 	const [loading, setLoading] = useState(false);
 	const [rememberMe, setRememberMe] = useState(false);
 	const [showAgentDialog, setShowAgentDialog] = useState(false);
-	const REDIRECT_AFTER_LOGIN_KEY = 'proofline_redirect_after_login';
+	const REDIRECT_AFTER_LOGIN_KEY = 'tetrode_redirect_after_login';
 
 	const handleInputChange = (field: keyof typeof formData, value: string) => {
 		setFormData(prev => {

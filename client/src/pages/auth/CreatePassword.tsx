@@ -22,7 +22,7 @@ function CreatePassword() {
 	const navigate = useNavigate();
 
 	useEffect(() => {
-		const email = sessionStorage.getItem('proofline_reset_email') || '';
+		const email = sessionStorage.getItem('tetrode_reset_email') || '';
 		setFormData(prev => ({ ...prev, email }));
 	}, []);
 
@@ -56,7 +56,7 @@ function CreatePassword() {
 				confirmPassword: formData.confirmPassword,
 			});
 			showToast.success(`Password reset successful: ${formData.email}`);
-			sessionStorage.removeItem('proofline_reset_email');
+			sessionStorage.removeItem('tetrode_reset_email');
 			navigate('/auth/login', { viewTransition: true });
 		} catch (error) {
 			console.error('Error resetting password:', error);

@@ -1,7 +1,9 @@
 import { useNavigate, useParams } from 'react-router';
 import AuthModal from '@/components/shared/AuthModal';
 
-function isValidMode(mode: string | null) {
+type AuthMode = 'signin' | 'signup' | 'verify' | 'onboarding' | 'wallet';
+
+function isValidMode(mode: string | null): mode is AuthMode {
 	return (
 		mode === 'signin' ||
 		mode === 'signup' ||
@@ -18,7 +20,7 @@ export default function AuthRoute() {
 	return (
 		<AuthModal
 			open
-			initialMode={isValidMode(mode ?? null) ? mode : 'signup'}
+			initialMode={isValidMode(mode ?? null) ? (mode as AuthMode) : 'signup'}
 			onOpenChange={nextOpen => {
 				if (!nextOpen) navigate('/', { replace: true });
 			}}

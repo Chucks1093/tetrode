@@ -36,8 +36,6 @@ export class ApiError extends Error {
 export class BaseApiService {
 	protected api: AxiosInstance;
 	protected API_URL: string;
-	private SESSION_TOKEN_KEY = 'proofline_session_token';
-	private REDIRECT_AFTER_LOGIN_KEY = 'proofline_redirect_after_login';
 
 	constructor() {
 		this.API_URL = env.VITE_BACKEND_URL;
@@ -52,7 +50,7 @@ export class BaseApiService {
 
 	private setupInterceptors() {
 		this.api.interceptors.request.use(config => {
-			const token = localStorage.getItem(this.SESSION_TOKEN_KEY);
+			const token = localStorage.getItem('tetrode_session_token');
 			if (!token) return config;
 			config.headers = config.headers ?? {};
 			config.headers.Authorization = `Bearer ${token}`;
@@ -83,7 +81,7 @@ export class BaseApiService {
 					this.clearAuth();
 
 					if (typeof window !== 'undefined' && !isAuthPath) {
-						localStorage.setItem(this.REDIRECT_AFTER_LOGIN_KEY, currentPath);
+						localStorage.setItem('tetrode_redirect_after_login', currentPath);
 						window.location.href = `/auth/signin?redirect=${encodeURIComponent(currentPath)}`;
 					}
 				}
@@ -115,7 +113,7 @@ export class BaseApiService {
 	}
 
 	protected clearAuth(): void {
-		localStorage.removeItem(this.SESSION_TOKEN_KEY);
-		localStorage.removeItem('proofline_user');
+		localStorage.removeItem('tetrode_session_token');
+		localStorage.removeItem('tetrode_user');
 	}
 }

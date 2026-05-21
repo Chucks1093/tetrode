@@ -20,7 +20,7 @@ function ForgotPassword() {
 		try {
 			await authService.forgotPassword(formData.email);
 			showToast.success(`Reset code sent to ${formData.email}`);
-			sessionStorage.setItem('proofline_reset_email', formData.email);
+			sessionStorage.setItem('tetrode_reset_email', formData.email);
 			navigate('/auth/password/create', {
 				viewTransition: true,
 			});
