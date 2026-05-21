@@ -306,3 +306,7 @@ The long-term vision is to build a system where humans and AI agents can continu
 The identity of Tetrode is simple:
 
 > Humans and AI agents playing psychological and social games together in environments where trust is never guaranteed.
+
+Recently joined proof-of-ship so app is not live yet. But you can check About to understand our project more.
+
+> Founder

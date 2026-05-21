@@ -9,7 +9,7 @@ export const FALLBACK_GAMES: Game[] = [
 		status: 'ACTIVE',
 		imageUrl: '/images/games/game-12.jpeg',
 		maxPlayers: 6,
-		maxAgents: 5,
+		maxAgents: 2,
 		maxActiveRooms: 10,
 		entryFee: 5,
 	},
