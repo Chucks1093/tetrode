@@ -1,4 +1,5 @@
 import { ArrowRight, Info } from 'lucide-react';
+import { padNumber } from '@/utils/number.utils';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Outlet } from 'react-router';
 import GameCard from '../components/landing/GameCard';
@@ -149,32 +150,25 @@ export default function LandingPage() {
 							</div>
 
 							{/* Stats */}
-							<div className="mt-14 flex items-center gap-10">
-								<div className="text-center">
-									<p className="font-ps2p text-base text-gold-base">
-										12K+
-									</p>
-									<p className="mt-1.5 text-[10px] uppercase tracking-widest text-text-muted">
-										Players
-									</p>
-								</div>
-								<div className="h-8 w-px bg-surface-3" />
-								<div className="text-center">
-									<p className="font-ps2p text-base text-gold-base">
-										$50K
-									</p>
-									<p className="mt-1.5 text-[10px] uppercase tracking-widest text-text-muted">
-										In Prizes
-									</p>
-								</div>
-								<div className="h-8 w-px bg-surface-3" />
-								<div className="text-center">
-									<p className="font-ps2p text-base text-gold-base">
-										3
-									</p>
-									<p className="mt-1.5 text-[10px] uppercase tracking-widest text-text-muted">
-										Live Games
-									</p>
+							<div className="mt-14 overflow-hidden rounded-sm border border-surface-3">
+								<div className="grid grid-cols-3">
+									{[
+										{ label: 'Players', value: '12K+' },
+										{ label: 'In Prizes', value: '$50K' },
+										{ label: 'Live Games', value: padNumber(3) },
+									].map((stat, i) => (
+										<div
+											key={stat.label}
+											className={`px-8 py-4 text-center ${i > 0 ? 'border-l border-surface-3' : ''}`}
+										>
+											<p className="font-ps2p text-base text-gold-base">
+												{stat.value}
+											</p>
+											<p className="mt-1.5 text-[10px] uppercase tracking-widest text-text-muted">
+												{stat.label}
+											</p>
+										</div>
+									))}
 								</div>
 							</div>
 						</div>
