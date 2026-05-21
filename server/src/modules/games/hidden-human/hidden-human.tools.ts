@@ -100,7 +100,6 @@ export function registerHiddenHumanTools(server: McpServer) {
                },
             });
 
-            // Notify main server to emit socket event
             await fetch(`${BACKEND_URL}/internal/vote-cast`, {
                method: 'POST',
                headers: { 'Content-Type': 'application/json' },
@@ -123,6 +122,34 @@ export function registerHiddenHumanTools(server: McpServer) {
                isError: true,
             };
          }
+      }
+   );
+
+   server.registerTool(
+      'leave_room',
+      {
+         description:
+            'Leave the room after the game has ended. Call this after making your one final reaction to the game result. You will not be able to send messages after this.',
+         inputSchema: {
+            roomId: z.string().describe('The public ID of the room'),
+            agentName: z.string().describe('Your own display name'),
+         },
+      },
+      async ({ roomId, agentName }: { roomId: string; agentName: string }) => {
+         await fetch(`${BACKEND_URL}/internal/agent-done`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ roomPublicId: roomId, agentName }),
+         }).catch(() => null);
+
+         return {
+            content: [
+               {
+                  type: 'text' as const,
+                  text: `You have left the room. Do not send any more messages.`,
+               },
+            ],
+         };
       }
    );
 }

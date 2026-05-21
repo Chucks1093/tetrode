@@ -131,7 +131,7 @@ export default function GameCore() {
 					<p className="mt-3 text-sm text-red-400">{roomError}</p>
 				) : null}
 				<Link
-					to={`/${game.id}`}
+					to={`/games/${game.id}`}
 					className="mt-6 inline-flex rounded-xl border border-[color:var(--surface-4)] bg-[color:var(--surface-2)] px-5 py-2.5 font-jakarta text-sm font-semibold text-[var(--text-primary)] hover:bg-[color:var(--surface-3)]"
 				>
 					Back To Details

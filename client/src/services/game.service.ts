@@ -1,3 +1,4 @@
+import { FALLBACK_GAMES } from '@/data/fallback-games';
 import { BaseApiService, type APIResponse } from './api.service';
 
 export type GameStatus = 'ACTIVE' | 'COMING_SOON';
@@ -24,9 +25,9 @@ class GameService extends BaseApiService {
 			const response = await this.api.get<APIResponse<Game[]>>('/games', {
 				params,
 			});
-			return response.data.data;
-		} catch (error) {
-			throw this.handleError(error);
+			return Array.isArray(response.data.data) ? response.data.data : FALLBACK_GAMES;
+		} catch {
+			return FALLBACK_GAMES;
 		}
 	}
 

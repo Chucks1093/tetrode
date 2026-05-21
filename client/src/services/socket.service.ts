@@ -57,6 +57,14 @@ class SocketService {
 	offVoteCast() {
 		this.socket?.off('vote:cast');
 	}
+
+	onGameEnded(callback: (data: { resultText: string }) => void) {
+		this.socket?.on('game:ended', callback);
+	}
+
+	offGameEnded() {
+		this.socket?.off('game:ended');
+	}
 }
 
 export const socketService = new SocketService();

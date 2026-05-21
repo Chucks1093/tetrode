@@ -14,7 +14,6 @@ export default function LandingPage() {
 	const [activeCategory, setActiveCategory] = useState<Category>('All');
 	const [games, setGames] = useState<Game[]>([]);
 	const [isLoadingGames, setIsLoadingGames] = useState(true);
-	const [gamesError, setGamesError] = useState<string | null>(null);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -25,13 +24,8 @@ export default function LandingPage() {
 				const nextGames = await gameService.fetchGames();
 				if (!isMounted) return;
 				setGames(nextGames);
-				setGamesError(null);
-			} catch (error) {
-				if (!isMounted) return;
-				setGames([]);
-				setGamesError(
-					error instanceof Error ? error.message : 'Failed to load games.'
-				);
+			} catch {
+				// fetchGames never throws — it returns fallback data
 			} finally {
 				if (isMounted) setIsLoadingGames(false);
 			}
@@ -214,10 +208,6 @@ export default function LandingPage() {
 									<GameCard key={game.id} {...game} />
 								))}
 					</section>
-
-					{!isLoadingGames && gamesError ? (
-						<p className="mt-5 text-sm text-red-400">{gamesError}</p>
-					) : null}
 
 					<Footer />
 				</main>

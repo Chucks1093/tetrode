@@ -14,6 +14,7 @@ import { io } from './socket';
 import { prisma } from './utils/prisma.utils';
 import { serializeChatMessage } from './modules/chat/chat.utils';
 import { ChatSenderType } from '@prisma/client';
+import { doneAgents } from './modules/games/hidden-human/hidden-human.handler';
 
 const app: Express = express();
 
@@ -105,6 +106,35 @@ app.post('/internal/vote-cast', (req: Request, res: Response) => {
             }).catch(() => null);
             if (sysMsg) {
                io.to(roomPublicId).emit('message:new', serializeChatMessage(sysMsg));
+            }
+         }
+      }
+      res.json({ success: true });
+   })();
+});
+
+// Internal endpoint — called by MCP leave_room tool to stop an agent responding
+app.post('/internal/agent-done', (req: Request, res: Response) => {
+   void (async () => {
+      const { roomPublicId, agentName } = req.body as { roomPublicId?: string; agentName?: string };
+      if (roomPublicId && agentName) {
+         const room = await prisma.room.findUnique({ where: { publicId: roomPublicId } }).catch(() => null);
+         if (room) {
+            const participant = await prisma.participant.findFirst({
+               where: { displayName: agentName, roomId: room.id },
+            }).catch(() => null);
+            if (participant) {
+               doneAgents.add(participant.id);
+               const sysMsg = await prisma.chatMessage.create({
+                  data: { roomId: room.id, senderType: ChatSenderType.SYSTEM, content: `${agentName} has left the room.` },
+                  include: {
+                     room: { select: { publicId: true } },
+                     senderParticipant: { select: { publicId: true, displayName: true, type: true } },
+                  },
+               }).catch(() => null);
+               if (sysMsg) {
+                  io.to(roomPublicId).emit('message:new', serializeChatMessage(sysMsg));
+               }
             }
          }
       }

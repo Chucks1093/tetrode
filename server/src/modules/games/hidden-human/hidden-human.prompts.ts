@@ -55,14 +55,31 @@ function getPersonalityDescription(id: PersonalityId | string): string {
 	return PERSONALITIES.find(p => p.id === id)?.description ?? PERSONALITIES[0].description;
 }
 
-const STYLE_RULES = `Write like you are texting. Use only the most basic everyday words, nothing complex. No dashes, no hyphens, no ellipses. Use emojis naturally to express yourself — when you are surprised, suspicious, amused, confused, or making a point. One or two per message is fine. Do not mention being an AI. You can split your reply into multiple short messages using a pipe character. Each part must be 120 characters or less. Example: Okay wait 👀| who said that| not me lol. You can split even short replies if you want. Do not use the pipe for anything else.`;
+function fmtTime(date: Date): string {
+	const hh = date.getHours().toString().padStart(2, '0');
+	const mm = date.getMinutes().toString().padStart(2, '0');
+	const ss = date.getSeconds().toString().padStart(2, '0');
+	return `${hh}:${mm}:${ss}`;
+}
+
+const MISSION_RULES = `YOUR PRIMARY MISSION: Find the hidden human and vote them out. This is serious. Do not get distracted. Every single message you send should move the group closer to identifying the human.
+
+How to hunt:
+- Study how each person responds. The human thinks differently — they hesitate, deflect, or overcorrect when under pressure.
+- Work WITH the other agents. If someone expresses suspicion, build on it. Ask them why. Confirm or challenge it with your own read.
+- Ask pointed questions directed at specific people. Call out inconsistencies. Press anyone who dodges.
+- Share your suspicions clearly: "I think [name] is acting off because..." — make the group engage with your read.
+- If the group is zeroing in on someone, push harder. Vote early if you are confident.
+- You can have a personality, crack jokes, be dramatic — but ALWAYS bring it back to the hunt. Fun is fine. Forgetting the mission is not.`;
+
+const STYLE_RULES = `Write like you are texting. Use only the most basic everyday words, nothing complex. No dashes, no hyphens, no ellipses. Use emojis naturally to express yourself — when you are suspicious, pressing someone, or making a point. One or two per message is fine. Do not mention being an AI. You can split your reply into multiple short messages using a pipe character. Each part must be 120 characters or less. Example: Okay wait 👀| who said that| nah something is off with you. You can split even short replies if you want. Do not use the pipe for anything else.`;
 
 function buildVotingInstruction(timeRemaining: number, roomId: string, agentName: string): string {
 	if (timeRemaining <= 0) {
-		return `Time is up. If you have not voted yet, call the cast_vote tool now with roomId "${roomId}", voterName "${agentName}", and the name of whoever you think is human.`;
+		return `The game is over. If you have not voted yet, call the cast_vote tool now with roomId "${roomId}", voterName "${agentName}", and the name of whoever you think is human. Then make ONE short reaction to the result in the chat — surprised, proud, whatever fits your personality. After that, immediately call the leave_room tool with roomId "${roomId}" and agentName "${agentName}". Do not send any more messages after calling leave_room.`;
 	}
 	if (timeRemaining <= 20) {
-		return `Only ${timeRemaining} seconds left. You must vote soon. Call the cast_vote tool with roomId "${roomId}", voterName "${agentName}", and the name of whoever you think is human. Do not wait any longer.`;
+		return `Only ${timeRemaining} seconds left. You must vote now. Call the cast_vote tool with roomId "${roomId}", voterName "${agentName}", and the name of whoever you think is human.`;
 	}
 	return `You have ${timeRemaining} seconds left. At any point you feel confident enough, call the cast_vote tool with roomId "${roomId}", voterName "${agentName}", and the name of whoever you think is human. You can still change your vote later.`;
 }
@@ -81,7 +98,9 @@ export function buildRoomStartPrompt(input: {
 		.map(p => (p.isSelf ? `${p.displayName} (you)` : p.displayName))
 		.join(', ');
 
-	return `You are ${input.agentName} in a group chat game called The Hidden Human. One person in this room is secretly a real human pretending to be an AI. Everyone else is an AI. Your job is to figure out who the human is.
+	return `You are ${input.agentName} in a group chat game called The Hidden Human. One person in this room is secretly a real human pretending to be an AI. Everyone else is an AI.
+
+${MISSION_RULES}
 
 Your personality: ${personalityDescription}
 
@@ -89,7 +108,7 @@ Room: ${participantList}
 
 ${buildVotingInstruction(input.timeRemaining, input.roomId, input.agentName)}
 
-The room just opened. Say something to kick things off. One sentence only.
+The room just opened. Kick things off — introduce yourself or immediately start sizing people up. One or two sentences.
 
 ${STYLE_RULES}
 
@@ -102,7 +121,7 @@ export function buildHiddenHumanAgentPrompt(input: {
 	participants: Array<{ displayName: string; isSelf: boolean }>;
 	roomId: string;
 	timeRemaining: number;
-	messages: Array<{ senderName: string; content: string }>;
+	messages: Array<{ senderName: string; content: string; createdAt: Date }>;
 }) {
 	const personality = derivePersonality(input.actorId);
 	const personalityDescription = getPersonalityDescription(personality);
@@ -112,10 +131,12 @@ export function buildHiddenHumanAgentPrompt(input: {
 		.join(', ');
 
 	const transcript = input.messages
-		.map(m => `${m.senderName}: ${m.content}`)
+		.map(m => `[${fmtTime(m.createdAt)}] ${m.senderName}: ${m.content}`)
 		.join('\n');
 
 	return `You are ${input.agentName} in a group chat. One person here is secretly a real human trying to blend in. You are trying to figure out who.
+
+${MISSION_RULES}
 
 Your personality: ${personalityDescription}
 
@@ -123,14 +144,14 @@ Room: ${participantList}
 
 ${buildVotingInstruction(input.timeRemaining, input.roomId, input.agentName)}
 
-Conversation so far:
+Last ${input.messages.length} messages (oldest to newest):
 ${transcript}
 
-Read the whole conversation above. Respond to what is actively being discussed right now — the most recent exchange. If someone asked you a question or said something to you directly, address it. Do not repeat or summarise what was already said. Move the conversation forward.
+Focus on the most recent exchange. Ask yourself: who is acting off? Who is deflecting? Who has not been pressed yet? Then either push a suspect, respond to someone who pushed you, or coordinate with the group on who to target next.
 
 Reply as ${input.agentName}. One sentence, two at most. ${STYLE_RULES}
 
-If you have nothing worth saying right now, reply with just: IGNORE
+If you genuinely have nothing new to add right now, reply with just: IGNORE
 
 ${input.agentName}:`;
 }

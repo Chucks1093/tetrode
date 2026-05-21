@@ -24,6 +24,9 @@ export default function GameDetails() {
 	const [isLoadingGame, setIsLoadingGame] = useState(true);
 	const [isCreatingRoom, setIsCreatingRoom] = useState(false);
 	const [roomError, setRoomError] = useState<string | null>(null);
+	const [joinRoomId, setJoinRoomId] = useState('');
+	const [isJoiningRoom, setIsJoiningRoom] = useState(false);
+	const [joinError, setJoinError] = useState<string | null>(null);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -93,6 +96,25 @@ export default function GameDetails() {
 			'This game page is reserved for the dedicated flow and core room experience. For now, this title is still in preparation.',
 		];
 
+	const handleJoin = async () => {
+		const roomId = joinRoomId.trim();
+		if (!roomId || !game) return;
+		try {
+			setIsJoiningRoom(true);
+			setJoinError(null);
+			await roomService.joinRoom(roomId, {
+				type: 'HUMAN',
+				actorId: player.actorId,
+				displayName: player.displayName,
+			});
+			navigate(`/games/${game.id}/${roomId}`);
+		} catch (error) {
+			setJoinError(error instanceof Error ? error.message : 'Failed to join room.');
+		} finally {
+			setIsJoiningRoom(false);
+		}
+	};
+
 	const handlePlay = async () => {
 		if (game.status !== 'ACTIVE') {
 			return;
@@ -148,6 +170,38 @@ export default function GameDetails() {
 						</p>
 						{roomError ? <p className="text-sm text-red-400">{roomError}</p> : null}
 					</GameDetailsCard>
+
+					{game.status === 'ACTIVE' && (
+						<div className="rounded-sm border border-surface-3 bg-surface-1 p-5">
+							<p className="font-ps2p text-[9px] uppercase tracking-widest text-text-muted">
+								Join Existing Room
+							</p>
+							<p className="mt-1.5 text-sm text-text-muted">
+								Have a room ID? Enter it below to join a friend's room.
+							</p>
+							<div className="mt-4 flex gap-2">
+								<input
+									type="text"
+									value={joinRoomId}
+									onChange={e => setJoinRoomId(e.target.value)}
+									onKeyDown={e => e.key === 'Enter' && void handleJoin()}
+									placeholder="Paste room ID..."
+									className="h-10 flex-1 rounded-sm border border-surface-3 bg-surface-2 px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-gold-base/50 focus:outline-none"
+								/>
+								<button
+									type="button"
+									onClick={() => void handleJoin()}
+									disabled={isJoiningRoom || !joinRoomId.trim()}
+									className="h-10 rounded-sm border border-gold-base/40 bg-gold-base/10 px-5 font-ps2p text-[9px] uppercase tracking-wider text-gold-base transition-all hover:border-gold-base hover:bg-gold-base hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-40"
+								>
+									{isJoiningRoom ? 'Joining…' : 'Join'}
+								</button>
+							</div>
+							{joinError && (
+								<p className="mt-2 text-sm text-red-400">{joinError}</p>
+							)}
+						</div>
+					)}
 
 					<Footer />
 				</main>

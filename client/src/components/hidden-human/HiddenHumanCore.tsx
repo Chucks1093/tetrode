@@ -2,7 +2,7 @@
 
 import makeBlockie from 'ethereum-blockies-base64';
 import { Check, ChevronDown, Copy, DoorOpen } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ChatFeed, ChatInput } from '@/components/shared/chat';
 import type { FeedMessage, ChatPlayer } from '@/components/shared/chat';
@@ -115,7 +115,8 @@ export default function HiddenHumanCore({
 	);
 	const [isLeavingRoom, setIsLeavingRoom] = useState(false);
 	const [copiedRoomId, setCopiedRoomId] = useState(false);
-	const resultsFetchedRef = useRef(false);
+	const [gameEnded, setGameEnded] = useState(false);
+	const [gameResult, setGameResult] = useState<string | null>(null);
 
 	// Sync timer with room.createdAt on first load
 	useEffect(() => {
@@ -130,35 +131,10 @@ export default function HiddenHumanCore({
 		return () => clearInterval(id);
 	}, []);
 
-	// Fetch and show results when timer ends
+	// Stop the local timer display when game ends
 	useEffect(() => {
-		if (timer !== 0 || resultsFetchedRef.current || !room?.id) return;
-		resultsFetchedRef.current = true;
-
-		void (async () => {
-			await new Promise(resolve => setTimeout(resolve, 1500));
-			try {
-				const results = await roomService.getRoomResults(room.id);
-				let text: string;
-				if (!results.votedOut) {
-					text = "Time's up! No one was voted out.";
-				} else if (results.votedOut.type === 'HUMAN') {
-					text = `Time's up! ${results.votedOut.displayName} was voted out — they were the hidden human. Agents win!`;
-				} else {
-					text = `Time's up! ${results.votedOut.displayName} was voted out — they were an AI. The human survives!`;
-				}
-				setMessages(prev => [
-					...prev,
-					{ id: `result-${Date.now()}`, sender: 'SYSTEM', type: 'system', eventType: 'result' as const, text },
-				]);
-			} catch {
-				setMessages(prev => [
-					...prev,
-					{ id: `result-${Date.now()}`, sender: 'SYSTEM', type: 'system', eventType: 'result' as const, text: "Time's up! Could not load results." },
-				]);
-			}
-		})();
-	}, [timer, room?.id]);
+		if (gameEnded) setTimer(0);
+	}, [gameEnded]);
 
 	// Load message history on mount
 	useEffect(() => {
@@ -226,10 +202,16 @@ export default function HiddenHumanCore({
 			});
 		});
 
+		socketService.onGameEnded(({ resultText }) => {
+			setGameEnded(true);
+			setGameResult(resultText);
+		});
+
 		return () => {
 			socketService.offMessage();
 			socketService.offAgentTyping();
 			socketService.offAgentStopTyping();
+			socketService.offGameEnded();
 			socketService.leaveRoom(room.id);
 		};
 	}, [room?.id, currentParticipant?.id]);
@@ -439,6 +421,30 @@ export default function HiddenHumanCore({
 					<p className="py-2 text-sm text-red-400">{messagesError}</p>
 				) : null}
 				<ChatFeed messages={messages} typingAgents={typingAgents} />
+
+				{gameEnded && (
+					<div className="mx-auto mb-4 w-full max-w-lg rounded-sm border border-gold-base/30 bg-surface-1 p-6 text-center">
+						<p className="font-ps2p text-[10px] uppercase tracking-widest text-gold-base">
+							Game Over
+						</p>
+						{gameResult && (
+							<p className="mt-3 text-sm leading-7 text-text-primary">
+								{gameResult}
+							</p>
+						)}
+						<p className="mt-2 text-[11px] text-text-muted">
+							This room is no longer active.
+						</p>
+						<button
+							type="button"
+							onClick={() => void handleLeaveRoom()}
+							disabled={isLeavingRoom}
+							className="mt-5 w-full rounded-sm bg-gold-base py-3 font-ps2p text-[9px] uppercase tracking-wider text-surface-0 transition-all hover:bg-gold-bright disabled:cursor-not-allowed disabled:opacity-60"
+						>
+							{isLeavingRoom ? 'Leaving…' : 'Leave Room'}
+						</button>
+					</div>
+				)}
 			</div>
 
 			<div className="fixed inset-x-0 bottom-0 z-40 pb-2 pt-4 backdrop-blur">
@@ -457,10 +463,11 @@ export default function HiddenHumanCore({
 						onSend={text => void handleSend(text)}
 						onVote={player => void handleVote(player)}
 						placeholder="Say something… blend in."
-						disabled={!room || !currentParticipant}
+						disabled={!room || !currentParticipant || gameEnded}
 					/>
 				</div>
 			</div>
+
 		</section>
 	);
 }
