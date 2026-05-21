@@ -306,7 +306,7 @@ export default function HiddenHumanCore({
 			setIsLeavingRoom(true);
 			await roomService.leaveRoom(room.id, currentParticipant.id);
 			socketService.leaveRoom(room.id);
-			navigate(`/${room.gameId}`);
+			navigate(`/games/${room.gameId}`);
 		} catch (error) {
 			setMessagesError(
 				error instanceof Error ? error.message : 'Failed to leave room.'

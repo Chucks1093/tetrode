@@ -106,7 +106,7 @@ export default function GameDetails() {
 				actorId: player.actorId,
 				displayName: player.displayName,
 			});
-			navigate(`/${game.id}/${createdRoom.id}`);
+			navigate(`/games/${game.id}/${createdRoom.id}`);
 		} catch (error) {
 			setRoomError(
 				error instanceof Error ? error.message : 'Failed to create room.'

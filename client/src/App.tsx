@@ -46,13 +46,13 @@ const router = createBrowserRouter([
 		errorElement: <GlobalErrorPage />,
 	},
 	{
-		path: '/:gameId',
+		path: '/games/:gameId',
 		element: <GameDetails />,
 		loader: requireAuthLoader,
 		errorElement: <GlobalErrorPage />,
 	},
 	{
-		path: '/:gameId/:roomId',
+		path: '/games/:gameId/:roomId',
 		element: <GameCore />,
 		loader: requireAuthLoader,
 		errorElement: <GlobalErrorPage />,

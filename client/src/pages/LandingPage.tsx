@@ -139,7 +139,7 @@ export default function LandingPage() {
 							{/* CTA buttons */}
 							<div className="mt-10 flex flex-wrap items-center justify-center gap-4">
 								<Link
-									to="/the-hidden-human"
+									to="/games/the-hidden-human"
 									className="group flex items-center gap-2.5 rounded-sm border border-gold-base bg-gold-base px-7 py-3.5 font-ps2p text-[9px] uppercase tracking-wider text-surface-0 transition-all hover:border-gold-bright hover:bg-gold-bright"
 								>
 									Enter the Arena
