@@ -28,13 +28,15 @@ function calcTypingDelay(text: string): number {
 const thinking = new Set<string>();
 const pendingResponse = new Map<string, boolean>();
 export const doneAgents = new Set<string>();
+const gracePeriodRooms = new Set<string>();
 
 const GAME_DURATION_MS = 300_000;
 const END_GRACE_MS = 30_000;
 
 type RoomState = {
    handlers: Array<(msg: SerializedMessage) => void>;
-   agents: Array<{ id: string; publicId: string }>;
+   agents: Array<{ id: string; publicId: string; actorId: string; displayName: string }>;
+   allParticipants: Array<{ id: string; displayName: string }>;
    startedAt: Date;
    gameTimer: ReturnType<typeof setTimeout>;
 };
@@ -79,6 +81,7 @@ function cleanup(roomPublicId: string) {
 
    clearRoomBus(roomPublicId);
    activeRooms.delete(roomPublicId);
+   gracePeriodRooms.delete(roomPublicId);
 }
 
 async function endGame(roomPublicId: string, roomId: string) {
@@ -159,9 +162,41 @@ async function endGame(roomPublicId: string, roomId: string) {
          doneAgents.delete(agent.id);
       }
 
-      // Send result — agents see it and have 30 seconds to react and leave
-      await saveAndEmitSystemMessage(roomPublicId, roomId, resultText);
+      // Enter grace period — handler is now blocked, agents triggered manually below
+      gracePeriodRooms.add(roomPublicId);
+
+      // Send result to socket only — do NOT put on room bus (handler is blocked anyway)
+      const savedResult = await prisma.chatMessage.create({
+         data: { roomId, senderType: ChatSenderType.SYSTEM, content: resultText },
+         include: {
+            room: { select: { publicId: true } },
+            senderParticipant: {
+               select: { publicId: true, displayName: true, type: true },
+            },
+         },
+      });
+      io.to(roomPublicId).emit('message:new', serializeChatMessage(savedResult));
+
+      // Manually trigger each agent's reaction once — staggered so they don't all fire at the same ms
+      for (let i = 0; i < state.agents.length; i++) {
+         const agent = state.agents[i]!;
+         await new Promise(resolve => setTimeout(resolve, i === 0 ? 0 : 800));
+         if (!doneAgents.has(agent.id)) {
+            void agentSaveAndEmit(agent, roomPublicId, roomId, state.allParticipants);
+         }
+      }
+
       await new Promise(resolve => setTimeout(resolve, END_GRACE_MS));
+
+      // Auto-leave for all agents that didn't call leave_room themselves
+      const currentState = activeRooms.get(roomPublicId);
+      if (currentState) {
+         await Promise.allSettled(
+            currentState.agents.map(agent =>
+               saveAndEmitSystemMessage(roomPublicId, roomId, `${agent.displayName} has left the room.`)
+            )
+         );
+      }
    } catch (err) {
       console.error('endGame error:', err);
    } finally {
@@ -299,7 +334,7 @@ async function agentSaveAndEmit(
       thinking.delete(agent.id);
       const hasPending = pendingResponse.get(agent.id);
       pendingResponse.delete(agent.id);
-      if (hasPending && !doneAgents.has(agent.id)) {
+      if (hasPending && !doneAgents.has(agent.id) && !gracePeriodRooms.has(roomPublicId)) {
          void agentSaveAndEmit(agent, roomPublicId, roomId, participants);
       }
    }
@@ -322,6 +357,7 @@ function subscribeAgents(
       const handler = (message: SerializedMessage) => {
          if (message.senderId === agent.publicId) return;
          if (doneAgents.has(agent.id)) return;
+         if (gracePeriodRooms.has(roomPublicId)) return;
          if (thinking.has(agent.id)) {
             pendingResponse.set(agent.id, true);
             return;
@@ -339,7 +375,8 @@ function subscribeAgents(
 
    activeRooms.set(roomPublicId, {
       handlers,
-      agents: aiParticipants.map(a => ({ id: a.id, publicId: a.publicId })),
+      agents: aiParticipants.map(a => ({ id: a.id, publicId: a.publicId, actorId: a.actorId, displayName: a.displayName })),
+      allParticipants,
       startedAt: new Date(),
       gameTimer,
    });

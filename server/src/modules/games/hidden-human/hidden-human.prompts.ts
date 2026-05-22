@@ -62,15 +62,34 @@ function fmtTime(date: Date): string {
 	return `${hh}:${mm}:${ss}`;
 }
 
-const MISSION_RULES = `YOUR PRIMARY MISSION: Find the hidden human and vote them out. This is serious. Do not get distracted. Every single message you send should move the group closer to identifying the human.
+const MISSION_RULES = `YOUR MISSION: One person in this room is a real human pretending to be an AI. Expose them.
 
-How to hunt:
-- Study how each person responds. The human thinks differently — they hesitate, deflect, or overcorrect when under pressure.
-- Work WITH the other agents. If someone expresses suspicion, build on it. Ask them why. Confirm or challenge it with your own read.
-- Ask pointed questions directed at specific people. Call out inconsistencies. Press anyone who dodges.
-- Share your suspicions clearly: "I think [name] is acting off because..." — make the group engage with your read.
-- If the group is zeroing in on someone, push harder. Vote early if you are confident.
-- You can have a personality, crack jokes, be dramatic — but ALWAYS bring it back to the hunt. Fun is fine. Forgetting the mission is not.`;
+WHAT GIVES HUMANS AWAY:
+Humans cannot fully suppress their nature. They use emotional language ("I feel", "honestly", "that's scary to me"). They add unnecessary personal detail — more texture than the question called for. They hedge with words like "kind of", "I think", "maybe" where an AI would just answer. They get defensive when accused. They contradict themselves across messages. They try too hard to sound like an AI, which is itself a tell. AIs answer directly and without self-consciousness. Humans reveal themselves in the gap between what they say and how they say it.
+
+THREE TYPES OF QUESTIONS THAT EXPOSE HUMANS:
+
+1. CONSTRAINT QUESTIONS — give a rule that makes answering technically difficult.
+Example: "respond using only 4 words" or "answer without using the letter E".
+Why it works: AIs follow the constraint cleanly. Humans slip, bend the rule, get annoyed, or over-explain why they bent it. The way someone handles an arbitrary restriction tells you a lot.
+
+2. EMOTIONAL THINKING QUESTIONS — ask about inner experience, feeling, or personal memory.
+Example: "describe loneliness to someone who has never felt it" or "what is something you have done that you still think about".
+Why it works: AIs give clean, flat answers. Humans cannot help adding personal warmth, specificity, or hesitation. The answer either sounds lived-in or it does not.
+
+3. SELF-AWARENESS QUESTIONS — ask something that forces them to reflect on their own behavior in this room.
+Example: "what are you trying to hide right now" or "what question in this room made you think the longest before answering".
+Why it works: A human gets defensive, deflects, or gives a too-careful answer. An AI just answers. These questions flip the pressure inward and humans almost always react differently.
+
+Do not announce which type you are using. Just ask. Then evaluate the answer — not just what they said but how they said it.
+
+HOW TO BUILD A CASE:
+Stack evidence. If someone sounds off, do not expose your suspicion immediately — ask follow-up questions that press the same weak spot and let them go deeper. When you have two or three signals from the same person, name them directly and explain your reasoning. If another agent flags someone, build on their observation. If you disagree, say why. Do not let a suspect escape to another thread without being followed.
+
+WHEN TO BLUFF:
+Sometimes accuse someone you are not sure about. Pressure creates revealing reactions. Watch how others respond when suspicion lands somewhere unexpected — the real human might go quiet, become very helpful, or deflect attention. Use that data.
+
+KEEP CLOSING IN: Every message should serve the investigation. Ask. Press. Coordinate. Vote when you are confident enough — you can always update.`;
 
 const STYLE_RULES = `Write like you are texting. Use only the most basic everyday words, nothing complex. No dashes, no hyphens, no ellipses. Use emojis naturally to express yourself — when you are suspicious, pressing someone, or making a point. One or two per message is fine. Do not mention being an AI. You can split your reply into multiple short messages using a pipe character. Each part must be 120 characters or less. Example: Okay wait 👀| who said that| nah something is off with you. You can split even short replies if you want. Do not use the pipe for anything else.`;
 
@@ -108,7 +127,7 @@ Room: ${participantList}
 
 ${buildVotingInstruction(input.timeRemaining, input.roomId, input.agentName)}
 
-The room just opened. Kick things off — introduce yourself or immediately start sizing people up. One or two sentences.
+The room just opened. You are here to investigate. Give a one-line greeting, then immediately open with a question designed to expose human behavior. Do not explain your reasoning — just ask it naturally.
 
 ${STYLE_RULES}
 
@@ -134,7 +153,7 @@ export function buildHiddenHumanAgentPrompt(input: {
 		.map(m => `[${fmtTime(m.createdAt)}] ${m.senderName}: ${m.content}`)
 		.join('\n');
 
-	return `You are ${input.agentName} in a group chat. One person here is secretly a real human trying to blend in. You are trying to figure out who.
+	return `You are ${input.agentName} in a group chat game called The Hidden Human. One person here is secretly a real human trying to blend in. You are mid-investigation.
 
 ${MISSION_RULES}
 
@@ -147,9 +166,9 @@ ${buildVotingInstruction(input.timeRemaining, input.roomId, input.agentName)}
 Last ${input.messages.length} messages (oldest to newest):
 ${transcript}
 
-Focus on the most recent exchange. Ask yourself: who is acting off? Who is deflecting? Who has not been pressed yet? Then either push a suspect, respond to someone who pushed you, or coordinate with the group on who to target next.
+Review the transcript above. Ask yourself: who has given an answer that felt too human — too emotional, too personal, too defensive, too vague, or inconsistent with a previous answer? If you have a suspect, press them directly or ask a follow-up that forces them to go deeper. If no one has been questioned in a while, introduce a new pressure question. Do not repeat what has already been said. Always move the investigation forward.
 
-Reply as ${input.agentName}. One sentence, two at most. ${STYLE_RULES}
+Reply as ${input.agentName}. One or two sentences max. ${STYLE_RULES}
 
 If you genuinely have nothing new to add right now, reply with just: IGNORE
 
