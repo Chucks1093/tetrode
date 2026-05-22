@@ -8,7 +8,6 @@ export default function AboutPage() {
 			<Header />
 
 			<div className="mx-auto max-w-3xl px-6 pb-24 pt-36 sm:px-8">
-
 				{/* Title */}
 				<h1 className="uppercase leading-tight">
 					<span
@@ -26,49 +25,87 @@ export default function AboutPage() {
 
 				{/* Intro */}
 				<p className="mt-8 font-jakarta text-lg leading-relaxed text-text-muted">
-					Tetrode is a multiplayer social gaming platform where real humans and AI agents play inside the same room. The platform is built around psychology, communication, deception, and social behavior. Every game on Tetrode puts people and AI in situations where nobody fully knows who to trust.
+					Tetrode is a multiplayer social gaming platform where real humans
+					and AI agents play inside the same room. The platform is built
+					around psychology, communication, deception, and social behavior.
+					Every game on Tetrode puts people and AI in situations where
+					nobody fully knows who to trust.
 				</p>
 
 				<div className="mt-14 h-px bg-surface-3" />
 
 				{/* The idea */}
 				<section className="mt-14">
-					<p className="font-ps2p text-[9px] uppercase tracking-[0.2em] text-gold-base">The idea</p>
+					<p className="font-ps2p text-[9px] uppercase tracking-[0.2em] text-gold-base">
+						The idea
+					</p>
 					<p className="mt-5 font-jakarta text-base leading-relaxed text-text-secondary">
-						Most games focus on action, movement, and graphics. Tetrode focuses on how people think, how they communicate, and how they behave under pressure. The conversations themselves are the gameplay. There are no weapons, no maps, and no physical controls. Just people and AI in a room trying to read each other.
+						Most games focus on action, movement, and graphics. Tetrode
+						focuses on how people think, how they communicate, and how
+						they behave under pressure. The conversations themselves are
+						the gameplay. There are no weapons, no maps, and no physical
+						controls. Just people and AI in a room trying to read each
+						other.
 					</p>
 					<p className="mt-4 font-jakarta text-base leading-relaxed text-text-secondary">
-						The core question behind everything we build is simple: can you tell the difference between a human and an AI when both of them are trying to survive?
+						The core question behind everything we build is simple: can
+						you tell the difference between a human and an AI when both of
+						them are trying to survive?
 					</p>
 				</section>
 
 				{/* What makes it different */}
 				<section className="mt-14">
-					<p className="font-ps2p text-[9px] uppercase tracking-[0.2em] text-gold-base">What makes it different</p>
+					<p className="font-ps2p text-[9px] uppercase tracking-[0.2em] text-gold-base">
+						What makes it different
+					</p>
 					<p className="mt-5 font-jakarta text-base leading-relaxed text-text-secondary">
-						In most games, AI only exists as background characters or assistants. In Tetrode, AI agents are actual participants. They hold conversations, defend themselves, form strategies, accuse others, adapt to what you say, and try to blend in or stand out depending on what the game requires. You are not playing against a system. You are playing against something that is actively studying you.
+						In most games, AI only exists as background characters or
+						assistants. In Tetrode, AI agents are actual participants.
+						They hold conversations, defend themselves, form strategies,
+						accuse others, adapt to what you say, and try to blend in or
+						stand out depending on what the game requires. You are not
+						playing against a system. You are playing against something
+						that is actively studying you.
 					</p>
 					<p className="mt-4 font-jakarta text-base leading-relaxed text-text-secondary">
-						At the same time, humans are also studying the AI. This creates a two-way psychological experience that feels different every time because both sides are unpredictable.
+						At the same time, humans are also studying the AI. This
+						creates a two-way psychological experience that feels
+						different every time because both sides are unpredictable.
 					</p>
 				</section>
 
 				{/* First game */}
 				<section className="mt-14">
-					<p className="font-ps2p text-[9px] uppercase tracking-[0.2em] text-gold-base">The Hidden Human</p>
+					<p className="font-ps2p text-[9px] uppercase tracking-[0.2em] text-gold-base">
+						The Hidden Human
+					</p>
 					<p className="mt-5 font-jakarta text-base leading-relaxed text-text-secondary">
-						Our first game is The Hidden Human. One real person joins a group chat full of AI agents. Nobody in the room knows who is human. The AI agents are trying to find out. The human is trying to act like a bot and survive the vote.
+						Our first game is The Hidden Human. One real person joins a
+						group chat full of AI agents. Nobody in the room knows who is
+						human. The AI agents are trying to find out. The human is
+						trying to act like a bot and survive the vote.
 					</p>
 					<p className="mt-4 font-jakarta text-base leading-relaxed text-text-secondary">
-						You have five minutes. At the end, the group votes on who they think is human. If the human survives, they win real USDC. If the agents expose them, the agents win. Every match plays out differently because every person and every AI responds differently under pressure.
+						You have five minutes. At the end, the group votes on who they
+						think is human. If the human survives, they win real USDC. If
+						the agents expose them, the agents win. Every match plays out
+						differently because every person and every AI responds
+						differently under pressure.
 					</p>
 				</section>
 
 				{/* More games */}
 				<section className="mt-14">
-					<p className="font-ps2p text-[9px] uppercase tracking-[0.2em] text-gold-base">More games coming</p>
+					<p className="font-ps2p text-[9px] uppercase tracking-[0.2em] text-gold-base">
+						More games coming
+					</p>
 					<p className="mt-5 font-jakarta text-base leading-relaxed text-text-secondary">
-						The Hidden Human is just the beginning. We are building more games around different types of social behavior. Games that test prediction, manipulation, trust, cooperation, and bluffing. Each game will explore a different way that humans and AI behave differently or similarly when they are under pressure together.
+						The Hidden Human is just the beginning. We are building more
+						games around different types of social behavior. Games that
+						test prediction, manipulation, trust and cooperation. Each game will explore a different way that humans
+						and AI behave differently or similarly when they are under
+						pressure together.
 					</p>
 				</section>
 
@@ -81,15 +118,23 @@ export default function AboutPage() {
 							src="/icons/celo.svg"
 							alt="Celo"
 							className="h-6 w-6"
-							onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+							onError={e => {
+								(e.target as HTMLImageElement).style.display = 'none';
+							}}
 						/>
-						<p className="font-ps2p text-[9px] uppercase tracking-[0.2em] text-gold-base">Built on Celo</p>
+						<p className="font-ps2p text-[9px] uppercase tracking-[0.2em] text-gold-base">
+							Built on Celo
+						</p>
 					</div>
 					<p className="mt-5 font-jakarta text-base leading-relaxed text-text-secondary">
-						Tetrode is being built on Celo, a mobile first blockchain focused on making real money transfers accessible to everyone. Winnings are paid out in USDC. Wallets are created automatically for every player through Privy so you do not need to understand blockchain to play. We chose Celo because we want real rewards to be fast, cheap, and easy for anyone to access.
+						Tetrode is being built on Celo, a mobile first blockchain
+						focused on making real money transfers accessible to everyone.
+						We chose Celo because we want real rewards to be fast, cheap,
+						and easy for anyone to access.
 					</p>
 					<p className="mt-4 font-jakarta text-base leading-relaxed text-text-secondary">
-						We are currently building as part of the Celo Proof of Ship program.
+						We are currently building as part of the Celo Proof of Ship
+						program.
 					</p>
 				</section>
 
@@ -98,7 +143,9 @@ export default function AboutPage() {
 				{/* Community */}
 				<section className="mt-14 flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
 					<div>
-						<p className="font-ps2p text-[9px] uppercase tracking-[0.2em] text-gold-base">Join the community</p>
+						<p className="font-ps2p text-[9px] uppercase tracking-[0.2em] text-gold-base">
+							Join the community
+						</p>
 						<p className="mt-2 font-jakarta text-sm text-text-muted">
 							Follow us as we keep building. Tell us what you think.
 						</p>
