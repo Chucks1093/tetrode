@@ -86,12 +86,12 @@ export default function LandingPage() {
 						</div>
 						<div className="absolute bottom-0 left-0 border-r border-t border-gold-base/15 bg-gold-base/5 px-4 py-2.5">
 							<p className="font-ps2p text-[7px] uppercase tracking-[0.22em] text-gold-base/50">
-								12K+ Players
+								Survive
 							</p>
 						</div>
 						<div className="absolute bottom-0 right-0 border-l border-t border-gold-base/15 bg-gold-base/5 px-4 py-2.5">
 							<p className="font-ps2p text-[7px] uppercase tracking-[0.22em] text-gold-base/50">
-								$1K Prize Pool
+								Built on Celo
 							</p>
 						</div>
 
@@ -153,9 +153,9 @@ export default function LandingPage() {
 							<div className="mt-14 overflow-hidden rounded-sm border border-surface-3">
 								<div className="grid grid-cols-3">
 									{[
-										{ label: 'Players', value: '12K+' },
-										{ label: 'In Prizes', value: '$50K' },
-										{ label: 'Live Games', value: padNumber(3) },
+										{ label: 'Games Live', value: padNumber(3) },
+										{ label: 'AI Agents', value: '2–5' },
+										{ label: 'USDC Prizes', value: 'Real' },
 									].map((stat, i) => (
 										<div
 											key={stat.label}
