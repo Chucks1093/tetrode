@@ -29,6 +29,7 @@ const thinking = new Set<string>();
 const pendingResponse = new Map<string, boolean>();
 export const doneAgents = new Set<string>();
 const gracePeriodRooms = new Set<string>();
+const gameEndedRooms = new Set<string>();
 
 const GAME_DURATION_MS = 300_000;
 const END_GRACE_MS = 30_000;
@@ -82,16 +83,20 @@ function cleanup(roomPublicId: string) {
    clearRoomBus(roomPublicId);
    activeRooms.delete(roomPublicId);
    gracePeriodRooms.delete(roomPublicId);
+   gameEndedRooms.delete(roomPublicId);
 }
 
 async function endGame(roomPublicId: string, roomId: string) {
    const state = activeRooms.get(roomPublicId);
    if (!state) return;
 
+   // Block any in-flight agentSaveAndEmit calls from saving messages after this point
+   gameEndedRooms.add(roomPublicId);
+
    let resultText = "Time's up!";
 
    try {
-      // Immediately stop all agents — clear typing indicators and block new responses
+      // Stop typing indicators and clear queued responses
       for (const agent of state.agents) {
          doneAgents.add(agent.id);
          thinking.delete(agent.id);
@@ -177,13 +182,11 @@ async function endGame(roomPublicId: string, roomId: string) {
       });
       io.to(roomPublicId).emit('message:new', serializeChatMessage(savedResult));
 
-      // Manually trigger each agent's reaction once — staggered so they don't all fire at the same ms
+      // Manually trigger each agent's reaction once — staggered, bypass gameEndedRooms
       for (let i = 0; i < state.agents.length; i++) {
          const agent = state.agents[i]!;
          await new Promise(resolve => setTimeout(resolve, i === 0 ? 0 : 800));
-         if (!doneAgents.has(agent.id)) {
-            void agentSaveAndEmit(agent, roomPublicId, roomId, state.allParticipants);
-         }
+         void agentSaveAndEmit(agent, roomPublicId, roomId, state.allParticipants, true);
       }
 
       await new Promise(resolve => setTimeout(resolve, END_GRACE_MS));
@@ -214,7 +217,8 @@ async function agentSaveAndEmit(
    },
    roomPublicId: string,
    roomId: string,
-   participants: Array<{ id: string; displayName: string }>
+   participants: Array<{ id: string; displayName: string }>,
+   overrideGameEnd = false
 ) {
    if (thinking.has(agent.id)) return;
    if (doneAgents.has(agent.id)) return;
@@ -291,7 +295,7 @@ async function agentSaveAndEmit(
          });
          await new Promise(resolve => setTimeout(resolve, delay));
 
-         if (doneAgents.has(agent.id)) {
+         if (doneAgents.has(agent.id) || (!overrideGameEnd && gameEndedRooms.has(roomPublicId))) {
             io.to(roomPublicId).emit('agent:stop-typing', { agentId: agent.publicId });
             break;
          }
@@ -334,7 +338,7 @@ async function agentSaveAndEmit(
       thinking.delete(agent.id);
       const hasPending = pendingResponse.get(agent.id);
       pendingResponse.delete(agent.id);
-      if (hasPending && !doneAgents.has(agent.id) && !gracePeriodRooms.has(roomPublicId)) {
+      if (hasPending && !doneAgents.has(agent.id) && !gracePeriodRooms.has(roomPublicId) && !gameEndedRooms.has(roomPublicId)) {
          void agentSaveAndEmit(agent, roomPublicId, roomId, participants);
       }
    }

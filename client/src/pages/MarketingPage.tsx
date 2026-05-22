@@ -127,10 +127,6 @@ export default function MarketingPage() {
 						We chose Celo because we want real rewards to be fast, cheap,
 						and easy for anyone to access.
 					</p>
-					<p className="mt-4 font-jakarta text-base leading-relaxed text-text-secondary">
-						We are currently building as part of the Celo Proof of Ship
-						program.
-					</p>
 				</section>
 
 				<div className="mt-14 h-px bg-surface-3" />
