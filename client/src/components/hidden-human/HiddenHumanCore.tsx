@@ -3,7 +3,7 @@
 import makeBlockie from 'ethereum-blockies-base64';
 import { Check, ChevronDown, Copy, DoorOpen } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { ChatFeed, ChatInput } from '@/components/shared/chat';
 import type { FeedMessage, ChatPlayer } from '@/components/shared/chat';
 import {
@@ -58,9 +58,11 @@ function toFeedMessage(
 			? ('phase' as const)
 			: lower.includes('has voted')
 				? ('vote' as const)
-				: lower.includes("time's up")
-					? ('result' as const)
-					: ('default' as const);
+				: lower.includes('has left the room')
+					? ('leave' as const)
+					: lower.includes("time's up")
+						? ('result' as const)
+						: ('default' as const);
 		return {
 			id: message.id,
 			sender: 'SYSTEM',
@@ -124,6 +126,13 @@ export default function HiddenHumanCore({
 		const elapsed = Math.floor((Date.now() - new Date(room.createdAt).getTime()) / 1000);
 		setTimer(Math.max(0, GAME_DURATION_S - elapsed));
 	}, [room?.createdAt]);
+
+	// If room is already finished on load (e.g. page reload), mark game as ended
+	useEffect(() => {
+		if (room?.status === 'FINISHED') {
+			setGameEnded(true);
+		}
+	}, [room?.status]);
 
 	// Count down every second
 	useEffect(() => {
@@ -304,9 +313,12 @@ export default function HiddenHumanCore({
 				<div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
 					{/* Left: title + stacked participants */}
 					<div className="flex items-center gap-3">
-						<p className="font-ps2p text-sm uppercase text-gold-base">
+						<Link
+							to="/games/the-hidden-human"
+							className="font-ps2p text-sm uppercase text-gold-base transition-opacity hover:opacity-70"
+						>
 							The Hidden Human
-						</p>
+						</Link>
 
 						{room?.participants && room.participants.length > 0 && (
 							<TooltipProvider>
@@ -423,7 +435,7 @@ export default function HiddenHumanCore({
 				<ChatFeed messages={messages} typingAgents={typingAgents} />
 
 				{gameEnded && (
-					<div className="mx-auto mb-4 w-full max-w-lg rounded-sm border border-gold-base/30 bg-surface-1 p-6 text-center">
+					<div className="mx-auto mb-36 w-full max-w-lg rounded-sm border border-gold-base/30 bg-surface-1 p-6 text-center">
 						<p className="font-ps2p text-[10px] uppercase tracking-widest text-gold-base">
 							Game Over
 						</p>

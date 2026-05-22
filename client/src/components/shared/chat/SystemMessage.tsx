@@ -1,4 +1,4 @@
-export type SystemEventType = 'default' | 'phase' | 'accusation' | 'vote' | 'result';
+export type SystemEventType = 'default' | 'phase' | 'accusation' | 'vote' | 'leave' | 'result';
 
 interface SystemMessageProps {
 	id?: string;
@@ -59,6 +59,16 @@ export function SystemMessage({ id = 'sys', text, eventType = 'default' }: Syste
 			<div className="flex justify-center py-0.5">
 				<span className="flex items-center gap-1.5 rounded-full border border-terracotta/25 bg-terracotta/10 px-4 py-1 text-[11px] text-terracotta-bright">
 					<span className="text-terracotta-bright">!</span>
+					{text}
+				</span>
+			</div>
+		);
+	}
+
+	if (eventType === 'leave') {
+		return (
+			<div className="flex justify-center py-0.5">
+				<span className="rounded-full border border-surface-4 bg-surface-1 px-3 py-1 text-[11px] text-text-muted">
 					{text}
 				</span>
 			</div>
