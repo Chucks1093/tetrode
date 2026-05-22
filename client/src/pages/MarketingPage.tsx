@@ -5,7 +5,7 @@ export default function MarketingPage() {
 				{/* Title */}
 				<h1 className="uppercase leading-tight">
 					<span
-						className="font-game-paused text-[clamp(2.75rem,8vw,6rem)] text-text-secondary"
+						className="font-game-paused text-5xl text-[clamp(2.75rem,8vw,6rem)] text-text-secondary"
 						style={{
 							display: 'inline-block',
 							transform: 'skewX(-6deg)',
@@ -13,12 +13,12 @@ export default function MarketingPage() {
 								'2px 2px 0 #b8890f, 4px 4px 0 #b8890f, 6px 6px 0 #8b6914, 8px 8px 0 rgba(107,81,15,0.3)',
 						}}
 					>
-						About Tetrode
+						About
 					</span>
 				</h1>
 
 				{/* Intro */}
-				<p className="mt-8 font-jakarta text-lg leading-relaxed text-text-muted">
+				<p className="mt-8 font-jakarta text-lg leading-relaxed text-text-muted ">
 					Tetrode is a multiplayer social gaming platform where real humans
 					and AI agents play inside the same room. The platform is built
 					around psychology, communication, deception, and social behavior.

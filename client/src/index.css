@@ -19,6 +19,38 @@
 	src: url('/fonts/game_paused/Game Paused DEMO.otf') format('opentype');
 	font-display: swap;
 }
+
+@font-face {
+	font-family: 'proto-mono';
+	src: url('/fonts/proto-mono/ProtoMono-Light.woff2') format('woff2'),
+		url('/fonts/proto-mono/ProtoMono-Light.woff') format('woff');
+	font-weight: 300;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'proto-mono';
+	src: url('/fonts/proto-mono/ProtoMono-Regular.woff2') format('woff2'),
+		url('/fonts/proto-mono/ProtoMono-Regular.woff') format('woff');
+	font-weight: 400;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'proto-mono';
+	src: url('/fonts/proto-mono/ProtoMono-Medium.woff2') format('woff2'),
+		url('/fonts/proto-mono/ProtoMono-Medium.woff') format('woff');
+	font-weight: 500;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'proto-mono';
+	src: url('/fonts/proto-mono/ProtoMono-SemiBold.woff2') format('woff2'),
+		url('/fonts/proto-mono/ProtoMono-SemiBold.woff') format('woff');
+	font-weight: 600;
+	font-display: swap;
+}
 @custom-variant dark (&:is(.dark *));
 
 @variant command-input (&:has([data-slot='command-input']) [data-slot='command-input-wrapper']);
@@ -135,6 +167,7 @@
 	--font-ps2p: 'Press Start 2P', sans-serif;
 	--font-binary_soldiers: 'binary_soldiers', sans-serif;
 	--font-game-paused: 'game_paused', sans-serif;
+	--font-proto-mono: 'proto-mono', monospace;
 }
 
 :root {
