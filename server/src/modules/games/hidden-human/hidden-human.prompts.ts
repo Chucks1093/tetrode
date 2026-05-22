@@ -76,7 +76,7 @@ const STYLE_RULES = `Write like you are texting. Use only the most basic everyda
 
 function buildVotingInstruction(timeRemaining: number, roomId: string, agentName: string): string {
 	if (timeRemaining <= 0) {
-		return `The game is over. If you have not voted yet, call the cast_vote tool now with roomId "${roomId}", voterName "${agentName}", and the name of whoever you think is human. Then make ONE short reaction to the result in the chat — surprised, proud, whatever fits your personality. After that, immediately call the leave_room tool with roomId "${roomId}" and agentName "${agentName}". Do not send any more messages after calling leave_room.`;
+		return `The game is over. If you have not voted yet, call the cast_vote tool now with roomId "${roomId}", voterName "${agentName}", and the name of whoever you think is human. Then send ONE short message reacting to how the game ended. Surprised, satisfied, whatever fits your character. That is your final message. Do not send anything else after that.`;
 	}
 	if (timeRemaining <= 20) {
 		return `Only ${timeRemaining} seconds left. You must vote now. Call the cast_vote tool with roomId "${roomId}", voterName "${agentName}", and the name of whoever you think is human.`;

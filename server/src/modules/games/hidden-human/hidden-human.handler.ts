@@ -16,7 +16,7 @@ import {
    buildHiddenHumanAgentPrompt,
 } from './hidden-human.prompts';
 
-const TYPING_CHARS_PER_SEC = 3.5;
+const TYPING_CHARS_PER_SEC = 4;
 const TYPING_MIN_MS = 1500;
 const TYPING_MAX_MS = 15000;
 
@@ -93,7 +93,9 @@ async function endGame(roomPublicId: string, roomId: string) {
          doneAgents.add(agent.id);
          thinking.delete(agent.id);
          pendingResponse.delete(agent.id);
-         io.to(roomPublicId).emit('agent:stop-typing', { agentId: agent.publicId });
+         io.to(roomPublicId).emit('agent:stop-typing', {
+            agentId: agent.publicId,
+         });
       }
 
       // Tally votes — DB query gives in-progress agent calls time to notice doneAgents and stop
@@ -102,38 +104,54 @@ async function endGame(roomPublicId: string, roomId: string) {
          include: {
             votes: {
                include: {
-                  target: { select: { publicId: true, displayName: true, type: true } },
+                  target: {
+                     select: { publicId: true, displayName: true, type: true },
+                  },
                },
             },
          },
       });
 
       if (room) {
-         const tally = new Map<string, { displayName: string; type: string; count: number }>();
+         const tally = new Map<
+            string,
+            { displayName: string; type: string; count: number }
+         >();
          for (const vote of room.votes) {
             const key = vote.target.publicId;
             const existing = tally.get(key);
             if (existing) {
                existing.count += 1;
             } else {
-               tally.set(key, { displayName: vote.target.displayName, type: vote.target.type, count: 1 });
+               tally.set(key, {
+                  displayName: vote.target.displayName,
+                  type: vote.target.type,
+                  count: 1,
+               });
             }
          }
 
-         let votedOut: { displayName: string; type: string; count: number } | null = null;
+         let votedOut: {
+            displayName: string;
+            type: string;
+            count: number;
+         } | null = null;
          for (const entry of tally.values()) {
             if (!votedOut || entry.count > votedOut.count) votedOut = entry;
          }
 
          if (!votedOut) {
-            resultText = "Time's up. No one was voted out. The hidden human survives.";
+            resultText =
+               "Time's up. No one was voted out. The hidden human survives.";
          } else if (votedOut.type === 'HUMAN') {
             resultText = `Time's up. ${votedOut.displayName} was voted out. They were the hidden human. Agents win.`;
          } else {
             resultText = `Time's up. ${votedOut.displayName} was voted out. They were an AI. The human survives.`;
          }
 
-         await prisma.room.update({ where: { id: room.id }, data: { status: 'FINISHED' } }).catch(() => null);
+         await prisma.room
+            .update({ where: { id: room.id }, data: { status: 'FINISHED' } })
+            .catch(() => null);
       }
 
       // Re-enable agents so they can react to the result
@@ -237,6 +255,11 @@ async function agentSaveAndEmit(
             name: agent.displayName,
          });
          await new Promise(resolve => setTimeout(resolve, delay));
+
+         if (doneAgents.has(agent.id)) {
+            io.to(roomPublicId).emit('agent:stop-typing', { agentId: agent.publicId });
+            break;
+         }
 
          const saved = await prisma.chatMessage.create({
             data: {
