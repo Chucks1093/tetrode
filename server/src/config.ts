@@ -78,6 +78,8 @@ export const resolvedPrivyJwtPrivateKey = envConfig.PRIVY_JWT_PRIVATE_KEY_PATH
 
 const developmentOrigins = ['http://localhost:5173', 'http://localhost:3000'];
 const sharedOrigins = [
+   'https://tetrode.netlify.app',
+   'https://tetrode.xyz',
    'https://proofline-eight.vercel.app',
    'https://proofline.xyz',
 ];
