@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'server/**'
+      - 'contracts/**'
+      - '.gitmodules'
       - '.github/workflows/deploy-backend.yml'
 
 concurrency:
@@ -18,6 +20,11 @@ jobs:
     timeout-minutes: 25
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - name: Configure SSH
         run: |
           set -euo pipefail
@@ -58,7 +65,31 @@ jobs:
           EOF
           chmod 600 ~/.ssh/config
 
-      - name: Deploy backend on Lightsail
+      - name: Upload release bundle to Lightsail
+        run: |
+          set -euo pipefail
+          APP_DIR="${{ secrets.LIGHTSAIL_APP_DIR }}"
+          if [ -z "$APP_DIR" ]; then
+            APP_DIR="/home/ubuntu/tetrode"
+          fi
+
+          RELEASE_TAR="/tmp/tetrode-release.tar.gz"
+
+          tar \
+            --exclude='.git' \
+            --exclude='**/node_modules' \
+            --exclude='**/dist' \
+            --exclude='**/.env' \
+            --exclude='contracts/broadcast' \
+            --exclude='server/tmp' \
+            -czf "$RELEASE_TAR" .
+
+          scp "$RELEASE_TAR" lightsail-target:/tmp/tetrode-release.tar.gz
+
+          ssh lightsail-target "mkdir -p \"$APP_DIR\""
+          ssh lightsail-target "tar -xzf /tmp/tetrode-release.tar.gz -C \"$APP_DIR\""
+
+      - name: Build and restart backend on Lightsail
         run: |
           set -euo pipefail
           ssh lightsail-target <<'EOF_SSH'
@@ -90,16 +121,6 @@ jobs:
           if [ -z "$APP_DIR" ]; then
             APP_DIR="$HOME/tetrode"
           fi
-
-          REPO_URL="${{ github.server_url }}/${{ github.repository }}.git"
-
-          if [ ! -d "$APP_DIR/.git" ]; then
-            git clone "$REPO_URL" "$APP_DIR"
-          fi
-
-          cd "$APP_DIR"
-          git fetch origin main --tags
-          git reset --hard origin/main
 
           cd "$APP_DIR/server"
           pnpm install --frozen-lockfile --child-concurrency=1
