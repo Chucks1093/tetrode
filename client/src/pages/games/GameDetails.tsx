@@ -20,7 +20,7 @@ const TREASURY_WALLET = import.meta.env.VITE_TREASURY_WALLET_ADDRESS as
 	| string
 	| undefined;
 const CELO_SEPOLIA_CHAIN_ID = 11142220;
-const TELEGRAM_URL = 'https://t.me/tetrode_gg';
+const TELEGRAM_URL = 'https://t.me/tetrodegames';
 
 async function fetchUsdcBalance(walletAddress: string): Promise<number> {
 	const selector = '0x70a08231';
