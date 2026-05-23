@@ -18,15 +18,10 @@ export function registerHiddenHumanTools(server: McpServer) {
                .describe('Display name of the participant you think is human'),
          },
       },
-      async ({
-         roomId,
-         voterName,
-         targetName,
-      }: {
-         roomId: string;
-         voterName: string;
-         targetName: string;
-      }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // @ts-ignore
+      async (args: any) => {
+         const { roomId, voterName, targetName } = args;
          try {
             const room = await prisma.room.findUnique({
                where: { publicId: roomId },

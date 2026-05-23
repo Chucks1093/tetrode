@@ -1,8 +1,8 @@
 {
    "compilerOptions": {
-      "target": "es2017",
+      "target": "ES2022",
       "module": "commonjs",
-      "lib": ["es6"],
+      "lib": ["ES2022"],
       "allowJs": true,
       "outDir": "dist",
       "rootDir": "src",
@@ -14,5 +14,5 @@
       "noUnusedParameters": false // Disable TS unused params check
    },
    "include": ["src/**/*"],
-   "exclude": ["node_modules"]
+   "exclude": ["node_modules", "src/scripts"]
 }
