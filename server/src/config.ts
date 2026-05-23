@@ -13,8 +13,8 @@ export const envSchema = z.object({
       .string()
       .min(1, 'DATABASE_URL is required in the environment variables'),
 
-   GMAIL_USER: z.string(),
-   GMAIL_APP_PASSWORD: z.string(),
+   GMAIL_USER: z.string().optional(),
+   GMAIL_APP_PASSWORD: z.string().optional(),
    RESEND_API_KEY: z.string().optional(),
    RESEND_FROM_EMAIL: z.string().email().optional(),
    // Google OAuth
@@ -34,23 +34,12 @@ export const envSchema = z.object({
       .min(1, 'FRONTEND_URL is required'),
 
    // Cloudinary
-   CLOUDINARY_CLOUD_NAME: z
-      .string()
-      .min(1, 'CLOUDINARY_CLOUD_NAME is required for image uploads'),
-   CLOUDINARY_API_KEY: z
-      .string()
-      .min(1, 'CLOUDINARY_API_KEY is required for image uploads'),
-   CLOUDINARY_API_SECRET: z
-      .string()
-      .min(1, 'CLOUDINARY_API_SECRET is required for image uploads'),
+   CLOUDINARY_CLOUD_NAME: z.string().optional(),
+   CLOUDINARY_API_KEY: z.string().optional(),
+   CLOUDINARY_API_SECRET: z.string().optional(),
 
-   PAYSTACK_SECRET_KEY: z
-      .string()
-      .min(1, 'PAYSTACK_SECRET_KEY is required for payment processing'),
-   PAYSTACK_PUBLIC_KEY: z
-      .string()
-      .min(1, 'PAYSTACK_PUBLIC_KEY is required for payment processing')
-      .optional(),
+   PAYSTACK_SECRET_KEY: z.string().optional(),
+   PAYSTACK_PUBLIC_KEY: z.string().optional(),
    PRIVY_APP_ID: z.string().optional(),
    PRIVY_APP_SECRET: z.string().optional(),
    PRIVY_JWT_ISSUER: z.string().optional(),

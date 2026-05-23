@@ -7,7 +7,7 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/tetrode/server
 EnvironmentFile=/etc/tetrode/server.env
-ExecStart=/bin/bash -lc 'export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"; nvm use 22 >/dev/null; corepack enable >/dev/null 2>&1 || true; pnpm start'
+ExecStart=/bin/bash -lc 'export PATH="$HOME/.opencode/bin:$PATH"; export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"; nvm use 22 >/dev/null; corepack enable >/dev/null 2>&1 || true; pnpm start'
 Restart=always
 RestartSec=5
 KillSignal=SIGINT
