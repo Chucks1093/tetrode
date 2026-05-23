@@ -122,6 +122,12 @@ jobs:
             APP_DIR="$HOME/tetrode"
           fi
 
+          set -a
+          . /etc/tetrode/server.env
+          set +a
+
+          cp /etc/tetrode/server.env "$APP_DIR/server/.env"
+
           cd "$APP_DIR/server"
           pnpm install --frozen-lockfile --child-concurrency=1
           pnpm exec prisma migrate deploy
