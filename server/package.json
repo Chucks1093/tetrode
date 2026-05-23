@@ -1,12 +1,12 @@
 {
-   "name": "proofline-backend",
+   "name": "tetrode-backend",
    "packageManager": "pnpm@10.6.5",
    "scripts": {
       "dev": "nodemon",
       "dev:prod-env": "ENV_FILE=.env.production nodemon",
       "start": "node dist/server.js",
       "prod": "ENV_FILE=.env.production node dist/server.js",
-      "build": "tsc",
+      "build": "NODE_OPTIONS=--max-old-space-size=4096 tsc",
       "db:up": "docker compose up -d postgres",
       "db:down": "docker compose down",
       "db:logs": "docker compose logs -f postgres",

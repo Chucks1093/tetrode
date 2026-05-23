@@ -5,7 +5,8 @@ import { prisma } from '../../../utils/prisma.utils';
 const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:3000';
 
 export function registerHiddenHumanTools(server: McpServer) {
-   server.registerTool(
+   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   (server as any).registerTool(
       'cast_vote',
       {
          description:
@@ -18,9 +19,7 @@ export function registerHiddenHumanTools(server: McpServer) {
                .describe('Display name of the participant you think is human'),
          },
       },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      // @ts-ignore
-      async (args: any) => {
+      async (args: { roomId: string; voterName: string; targetName: string }) => {
          const { roomId, voterName, targetName } = args;
          try {
             const room = await prisma.room.findUnique({
