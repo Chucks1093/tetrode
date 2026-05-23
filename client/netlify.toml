@@ -1,3 +1,8 @@
+[build]
+  base = "client"
+  command = "pnpm build"
+  publish = "dist"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
