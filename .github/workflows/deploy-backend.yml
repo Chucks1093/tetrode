@@ -122,11 +122,15 @@ jobs:
             APP_DIR="$HOME/tetrode"
           fi
 
+          TMP_ENV_FILE="/tmp/tetrode-server.env"
+          sudo cp /etc/tetrode/server.env "$TMP_ENV_FILE"
+          sudo chown "$USER":"$USER" "$TMP_ENV_FILE"
+
           set -a
-          . /etc/tetrode/server.env
+          . "$TMP_ENV_FILE"
           set +a
 
-          cp /etc/tetrode/server.env "$APP_DIR/server/.env"
+          cp "$TMP_ENV_FILE" "$APP_DIR/server/.env"
 
           cd "$APP_DIR/server"
           pnpm install --frozen-lockfile --child-concurrency=1
