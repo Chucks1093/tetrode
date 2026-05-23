@@ -4,9 +4,9 @@ import { prisma } from '../../utils/prisma.utils';
 // ── Agent name pool ───────────────────────────────────────────────────────────
 
 const AGENT_NAMES = [
-	'Alex', 'Sam', 'Jordan', 'Riley', 'Casey', 'Morgan', 'Drew', 'Avery',
-	'Quinn', 'Blake', 'Reese', 'Finley', 'Sage', 'River', 'Rowan', 'Harlow',
-	'Zion', 'Kendall', 'Sloane', 'Peyton', 'Lennox', 'Marlowe', 'Emery', 'Nova',
+	'Nadia', 'Lena', 'Cora', 'Iris', 'Vera', 'Mila', 'Ada', 'Thea',
+	'Eli', 'Roman', 'Felix', 'Miles', 'Jasper', 'Leon', 'Dorian', 'Callum',
+	'Sage', 'River', 'Lark', 'Wren', 'Pax', 'Gray', 'Sol', 'Vale',
 ];
 
 export function pickAgentNames(count: number): string[] {

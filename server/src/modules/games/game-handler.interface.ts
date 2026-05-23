@@ -6,6 +6,7 @@ export type RoomParticipant = {
 	actorId: string;
 	displayName: string;
 	type: ParticipantType;
+	walletAddress?: string | null;
 };
 
 export interface GameHandler {

@@ -15,12 +15,6 @@ declare global {
          avatarUrl?: string | null;
          walletAddress?: string | null;
       };
-      currentAgent?: {
-         id: string;
-         name: string;
-         ownerEmail: string;
-         scopes: string[];
-      };
    }
 }
 }

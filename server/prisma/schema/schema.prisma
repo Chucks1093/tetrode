@@ -14,29 +14,3 @@ datasource db {
   url      = env("DATABASE_URL") // You can safely ignore the error on this line.
 }
 
-enum AgentStatus {
-  PENDING_VERIFICATION
-  ACTIVE
-  REVOKED
-}
-
-model Agent {
-  id                     String      @id @default(cuid())
-  name                   String
-  ownerEmail             String
-  ownerVerified          Boolean     @default(false)
-  status                 AgentStatus @default(PENDING_VERIFICATION)
-  keyId                  String      @unique
-  secretHash             String
-  scopes                 String[]    @default([])
-  verificationCode       String?
-  verificationCodeExpiresAt DateTime?
-  verificationCodeUsedAt DateTime?
-  revokedAt              DateTime?
-  lastUsedAt             DateTime?
-  createdAt              DateTime    @default(now())
-  updatedAt              DateTime    @updatedAt
-
-  @@index([ownerEmail])
-  @@index([status])
-}

@@ -67,21 +67,31 @@ export default function Header() {
 				{/* Nav */}
 				<nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-8 text-xs text-text-muted md:flex">
 					{[
-						{ label: 'Leaderboard', href: '#' },
-						{ label: 'Twitter', href: 'https://x.com/tetrodegames' },
-						{ label: 'Telegram', href: 'https://t.me/tetrodegames' },
-						{ label: 'About', href: '/about' },
-					].map(({ label, href }) => (
-						<a
-							key={label}
-							href={href}
-							target={href === '#' ? undefined : '_blank'}
-							rel={href === '#' ? undefined : 'noopener noreferrer'}
-							className="uppercase tracking-widest transition-colors hover:text-text-primary"
-						>
-							{label}
-						</a>
-					))}
+						{ label: 'Leaderboard', href: '/leaderboard', external: false },
+						{ label: 'Twitter', href: 'https://x.com/tetrodegames', external: true },
+						{ label: 'Telegram', href: 'https://t.me/tetrodegames', external: true },
+						{ label: 'About', href: '/about', external: false },
+					].map(({ label, href, external }) =>
+						external ? (
+							<a
+								key={label}
+								href={href}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="uppercase tracking-widest transition-colors hover:text-text-primary"
+							>
+								{label}
+							</a>
+						) : (
+							<Link
+								key={label}
+								to={href}
+								className="uppercase tracking-widest transition-colors hover:text-text-primary"
+							>
+								{label}
+							</Link>
+						)
+					)}
 				</nav>
 
 				{/* Right side */}

@@ -3,6 +3,7 @@ import { agentService } from '../../../services/agent.service';
 import { io } from '../../../socket';
 import { prisma } from '../../../utils/prisma.utils';
 import { serializeChatMessage } from '../../chat/chat.utils';
+import { recordWin } from '../../../services/leaderboard.service';
 import {
    emitRoomMessage,
    onRoomMessage,
@@ -37,7 +38,7 @@ const END_GRACE_MS = 30_000;
 type RoomState = {
    handlers: Array<(msg: SerializedMessage) => void>;
    agents: Array<{ id: string; publicId: string; actorId: string; displayName: string }>;
-   allParticipants: Array<{ id: string; displayName: string }>;
+   allParticipants: Array<{ id: string; displayName: string; type: ParticipantType; walletAddress?: string | null }>;
    startedAt: Date;
    gameTimer: ReturnType<typeof setTimeout>;
 };
@@ -148,6 +149,8 @@ async function endGame(roomPublicId: string, roomId: string) {
             if (!votedOut || entry.count > votedOut.count) votedOut = entry;
          }
 
+         const humanWon = !votedOut || votedOut.type !== 'HUMAN';
+
          if (!votedOut) {
             resultText =
                "Time's up. No one was voted out. The hidden human survives.";
@@ -156,6 +159,41 @@ async function endGame(roomPublicId: string, roomId: string) {
          } else {
             resultText = `Time's up. ${votedOut.displayName} was voted out. They were an AI. The human survives.`;
          }
+
+         if (humanWon) {
+            const humanParticipant = state.allParticipants.find(
+               p => p.type === ParticipantType.HUMAN
+            );
+            if (humanParticipant?.walletAddress) {
+               void recordWin(humanParticipant.walletAddress);
+            }
+         }
+
+         // Update leaderboard entries for all participants
+         const WIN_POINTS = 100;
+         const LOSS_POINTS = 10;
+         await Promise.allSettled(
+            state.allParticipants.map(p => {
+               const won = p.type === ParticipantType.HUMAN ? humanWon : !humanWon;
+               return prisma.leaderboardEntry.upsert({
+                  where: { type_entityId: { type: p.type, entityId: p.id } },
+                  update: {
+                     gamesPlayed: { increment: 1 },
+                     gamesWon: won ? { increment: 1 } : undefined,
+                     points: { increment: won ? WIN_POINTS : LOSS_POINTS },
+                     displayName: p.displayName,
+                  },
+                  create: {
+                     type: p.type,
+                     entityId: p.id,
+                     displayName: p.displayName,
+                     gamesPlayed: 1,
+                     gamesWon: won ? 1 : 0,
+                     points: won ? WIN_POINTS : LOSS_POINTS,
+                  },
+               });
+            })
+         );
 
          await prisma.room
             .update({ where: { id: room.id }, data: { status: 'FINISHED' } })
@@ -217,7 +255,7 @@ async function agentSaveAndEmit(
    },
    roomPublicId: string,
    roomId: string,
-   participants: Array<{ id: string; displayName: string }>,
+   participants: Array<{ id: string; displayName: string; type?: ParticipantType; walletAddress?: string | null }>,
    overrideGameEnd = false
 ) {
    if (thinking.has(agent.id)) return;
@@ -353,7 +391,7 @@ function subscribeAgents(
       actorId: string;
       displayName: string;
    }>,
-   allParticipants: Array<{ id: string; displayName: string }>
+   allParticipants: Array<{ id: string; displayName: string; type: ParticipantType; walletAddress?: string | null }>
 ) {
    const handlers: Array<(msg: SerializedMessage) => void> = [];
 

@@ -1,0 +1,12 @@
+# Foundry build output
+out/
+cache/
+
+# Dependencies
+lib/
+
+# Environment
+.env
+
+# Broadcast (contains sensitive tx data)
+broadcast/*/31337/

@@ -6,6 +6,7 @@ import Header from '@/components/shared/Header';
 import { gameService, type Game } from '@/services/game.service';
 import { playerService } from '@/services/player.service';
 import { roomService } from '@/services/room.service';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 const gameNotes: Record<string, string[]> = {
 	'the-hidden-human': [
@@ -19,6 +20,7 @@ export default function GameDetails() {
 	const navigate = useNavigate();
 	const { gameId = '' } = useParams();
 	const player = playerService.getIdentity();
+	const walletAddress = useAuthStore(s => s.user?.walletAddress);
 	const [game, setGame] = useState<Game | null>(null);
 	const [gameError, setGameError] = useState<string | null>(null);
 	const [isLoadingGame, setIsLoadingGame] = useState(true);
@@ -106,6 +108,7 @@ export default function GameDetails() {
 				type: 'HUMAN',
 				actorId: player.actorId,
 				displayName: player.displayName,
+				walletAddress,
 			});
 			navigate(`/games/${game.id}/${roomId}`);
 		} catch (error) {
@@ -127,6 +130,7 @@ export default function GameDetails() {
 				gameId: game.id,
 				actorId: player.actorId,
 				displayName: player.displayName,
+				walletAddress,
 			});
 			navigate(`/games/${game.id}/${createdRoom.id}`);
 		} catch (error) {

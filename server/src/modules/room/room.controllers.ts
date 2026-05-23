@@ -56,6 +56,7 @@ export const httpCreateRoom: AsyncController = async (req, res, next) => {
 								type: 'HUMAN',
 								actorId: validated.actorId,
 								displayName: validated.displayName,
+								walletAddress: validated.walletAddress,
 							},
 							...createdAgentSessionIds.map((agentSessionId, index) => ({
 								type: 'AI' as const,
@@ -252,6 +253,7 @@ export const httpJoinRoom: AsyncController = async (req, res, next) => {
 				type: validated.type,
 				actorId: validated.actorId,
 				displayName: validated.displayName,
+				walletAddress: validated.walletAddress,
 			},
 		});
 

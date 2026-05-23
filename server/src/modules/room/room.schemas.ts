@@ -7,6 +7,7 @@ export const CreateRoomSchema = z.object({
    gameId: z.string().trim().min(1),
    actorId: z.string().trim().min(1).max(191),
    displayName: z.string().trim().min(1).max(32),
+   walletAddress: z.string().trim().optional(),
 });
 
 export const ListRoomsQuerySchema = z.object({
@@ -20,6 +21,7 @@ export const JoinRoomSchema = z.object({
    type: ParticipantTypeSchema,
    actorId: z.string().trim().min(1).max(191),
    displayName: z.string().trim().min(1).max(32),
+   walletAddress: z.string().trim().optional(),
 });
 
 export const LeaveRoomSchema = z.object({

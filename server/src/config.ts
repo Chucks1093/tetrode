@@ -61,6 +61,10 @@ export const envSchema = z.object({
    OPENCODE_PROVIDER: z.string().default('opencode'),
    OPENCODE_MODEL_ID: z.string().default('deep-deepseek-v4-flash'),
    OPENCODE_BASE_URL: z.string().url().default('http://127.0.0.1:4096'),
+
+   // Celo leaderboard
+   ORACLE_PRIVATE_KEY: z.string().optional(),
+   LEADERBOARD_CONTRACT_ADDRESS: z.string().optional(),
 });
 
 export const envConfig = envSchema.parse(process.env);

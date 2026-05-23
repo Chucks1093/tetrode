@@ -23,6 +23,8 @@
       "generate": "pnpm exec prisma generate",
       "migrate": "pnpm exec prisma migrate dev",
       "games:seed": "ts-node src/scripts/seed-games.ts",
+      "agents:seed": "ts-node src/scripts/seed-agents.ts",
+      "agents:mint": "ts-node src/scripts/mint-agents-erc8004.ts",
       "studio": "pnpm exec prisma studio",
       "validate-api": "tspec validate",
       "seed:reports": "ts-node src/scripts/seed-reports.ts",
@@ -65,6 +67,7 @@
       "swagger-ui-express": "^5.0.1",
       "text-to-svg": "^3.1.5",
       "tspec": "^0.1.116",
+      "viem": "^2.50.4",
       "xlsx": "^0.18.5",
       "zod": "^3.24.4",
       "zod-validation-error": "^3.5.2"

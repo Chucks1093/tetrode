@@ -42,6 +42,7 @@ class RoomService extends BaseApiService {
 		gameId: string;
 		actorId: string;
 		displayName: string;
+		walletAddress?: string;
 	}): Promise<Room> {
 		try {
 			const response = await this.api.post<APIResponse<Room>>('/rooms', input);
@@ -96,6 +97,7 @@ class RoomService extends BaseApiService {
 			type: ParticipantType;
 			actorId: string;
 			displayName: string;
+			walletAddress?: string;
 		}
 	): Promise<RoomParticipant> {
 		try {

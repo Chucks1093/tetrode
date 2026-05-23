@@ -29,8 +29,9 @@ model Participant {
   roomId      String
   type        ParticipantType
   displayName String
-  actorId     String
-  joinedAt    DateTime        @default(now())
+  actorId       String
+  walletAddress String?
+  joinedAt      DateTime        @default(now())
   room        Room            @relation(fields: [roomId], references: [id], onDelete: Cascade)
   messages    ChatMessage[]
   votesGiven  Vote[]          @relation("VoterVotes")

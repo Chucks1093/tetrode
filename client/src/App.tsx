@@ -10,6 +10,7 @@ import AuthRoute from './pages/auth/AuthRoute';
 import OAuthCallback from './pages/auth/OAuthCallback';
 import GameCore from './pages/games/GameCore';
 import GameDetails from './pages/games/GameDetails';
+import LeaderboardPage from './pages/LeaderboardPage';
 
 import GlobalErrorPage from './pages/GlobalErrorPage';
 import { requireAuthLoader } from './loaders/auth.loader';
@@ -58,6 +59,11 @@ const devRouter = createBrowserRouter([
 	{
 		path: '/auth/callback',
 		element: <OAuthCallback />,
+		errorElement: <GlobalErrorPage />,
+	},
+	{
+		path: '/leaderboard',
+		element: <LeaderboardPage />,
 		errorElement: <GlobalErrorPage />,
 	},
 	{

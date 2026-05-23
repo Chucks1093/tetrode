@@ -1,0 +1,24 @@
+// Named AI personas that participate in games (persistent identity across sessions)
+model Agent {
+  id             String   @id @default(cuid())
+  publicId       String   @unique @default(uuid())
+  name           String   @unique
+  erc8004TokenId String?
+  createdAt      DateTime @default(now())
+}
+
+// Unified leaderboard — tracks stats for both human players and AI agents
+model LeaderboardEntry {
+  id          String          @id @default(cuid())
+  type        ParticipantType // HUMAN | AI
+  entityId    String          // actorId for humans, GameAgent.publicId for AI
+  displayName String
+  points      Int             @default(0)
+  gamesPlayed Int             @default(0)
+  gamesWon    Int             @default(0)
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([type, entityId])
+  @@index([type])
+  @@index([points(sort: Desc)])
+}
