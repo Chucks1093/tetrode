@@ -5,7 +5,6 @@ import chatRouter from './chat/chat.routes';
 import roomRouter from './room/room.routes';
 import agentsRouter from './agents/agents.routes';
 import leaderboardRouter from './leaderboard/leaderboard.routes';
-
 const router = Router();
 
 router.use('/profile', profileRouter);

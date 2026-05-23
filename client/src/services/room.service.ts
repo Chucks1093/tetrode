@@ -1,5 +1,24 @@
 import { BaseApiService, type APIResponse } from './api.service';
 
+export class PaymentRequiredError extends Error {
+	readonly entryFee: string;
+	constructor(entryFee: string) {
+		super('Entry fee required');
+		this.entryFee = entryFee;
+	}
+}
+
+export interface UsdcAuthorization {
+	from: string;
+	to: string;
+	value: string;
+	validAfter: string;
+	validBefore: string;
+	nonce: string;
+	signature: string;
+}
+
+
 export type RoomStatus = 'WAITING' | 'ACTIVE' | 'FINISHED';
 export type ParticipantType = 'HUMAN' | 'AI';
 
@@ -43,11 +62,18 @@ class RoomService extends BaseApiService {
 		actorId: string;
 		displayName: string;
 		walletAddress?: string;
+		usdcAuthorization?: UsdcAuthorization;
 	}): Promise<Room> {
 		try {
 			const response = await this.api.post<APIResponse<Room>>('/rooms', input);
 			return response.data.data;
-		} catch (error) {
+		} catch (error: unknown) {
+			const axiosError = error as { response?: { status: number; data?: { data?: { entryFee?: string } } } };
+			if (axiosError?.response?.status === 402) {
+				const entryFee = axiosError.response.data?.data?.entryFee ?? '0';
+				throw new PaymentRequiredError(entryFee);
+			}
+
 			throw this.handleError(error);
 		}
 	}
@@ -151,6 +177,7 @@ class RoomService extends BaseApiService {
 			throw this.handleError(error);
 		}
 	}
+
 }
 
 export const roomService = new RoomService();

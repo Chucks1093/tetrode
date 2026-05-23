@@ -38,7 +38,7 @@ const END_GRACE_MS = 30_000;
 type RoomState = {
    handlers: Array<(msg: SerializedMessage) => void>;
    agents: Array<{ id: string; publicId: string; actorId: string; displayName: string }>;
-   allParticipants: Array<{ id: string; displayName: string; type: ParticipantType; walletAddress?: string | null }>;
+   allParticipants: Array<{ id: string; actorId: string; displayName: string; type: ParticipantType; walletAddress?: string | null }>;
    startedAt: Date;
    gameTimer: ReturnType<typeof setTimeout>;
 };
@@ -160,23 +160,35 @@ async function endGame(roomPublicId: string, roomId: string) {
             resultText = `Time's up. ${votedOut.displayName} was voted out. They were an AI. The human survives.`;
          }
 
-         if (humanWon) {
-            const humanParticipant = state.allParticipants.find(
-               p => p.type === ParticipantType.HUMAN
-            );
-            if (humanParticipant?.walletAddress) {
-               void recordWin(humanParticipant.walletAddress);
-            }
+         const humanParticipant = state.allParticipants.find(
+            p => p.type === ParticipantType.HUMAN
+         );
+         if (humanParticipant?.walletAddress && humanWon) {
+            void recordWin(humanParticipant.walletAddress);
          }
 
          // Update leaderboard entries for all participants
          const WIN_POINTS = 100;
          const LOSS_POINTS = 10;
+
+         // Pre-fetch AI agent publicIds keyed by displayName
+         const aiNames = state.allParticipants
+            .filter(p => p.type === ParticipantType.AI)
+            .map(p => p.displayName);
+         const agentRecords = aiNames.length
+            ? await prisma.agent.findMany({ where: { name: { in: aiNames } }, select: { name: true, publicId: true } })
+            : [];
+         const agentPublicIdByName = new Map(agentRecords.map(a => [a.name, a.publicId]));
+
          await Promise.allSettled(
             state.allParticipants.map(p => {
                const won = p.type === ParticipantType.HUMAN ? humanWon : !humanWon;
+               // Humans: use actorId (persists across games). AI: use GameAgent publicId.
+               const entityId = p.type === ParticipantType.HUMAN
+                  ? p.actorId
+                  : (agentPublicIdByName.get(p.displayName) ?? p.actorId);
                return prisma.leaderboardEntry.upsert({
-                  where: { type_entityId: { type: p.type, entityId: p.id } },
+                  where: { type_entityId: { type: p.type, entityId } },
                   update: {
                      gamesPlayed: { increment: 1 },
                      gamesWon: won ? { increment: 1 } : undefined,
@@ -185,7 +197,7 @@ async function endGame(roomPublicId: string, roomId: string) {
                   },
                   create: {
                      type: p.type,
-                     entityId: p.id,
+                     entityId,
                      displayName: p.displayName,
                      gamesPlayed: 1,
                      gamesWon: won ? 1 : 0,
@@ -255,7 +267,7 @@ async function agentSaveAndEmit(
    },
    roomPublicId: string,
    roomId: string,
-   participants: Array<{ id: string; displayName: string; type?: ParticipantType; walletAddress?: string | null }>,
+   participants: Array<{ id: string; actorId?: string; displayName: string; type?: ParticipantType; walletAddress?: string | null }>,
    overrideGameEnd = false
 ) {
    if (thinking.has(agent.id)) return;
@@ -391,7 +403,7 @@ function subscribeAgents(
       actorId: string;
       displayName: string;
    }>,
-   allParticipants: Array<{ id: string; displayName: string; type: ParticipantType; walletAddress?: string | null }>
+   allParticipants: Array<{ id: string; actorId: string; displayName: string; type: ParticipantType; walletAddress?: string | null }>
 ) {
    const handlers: Array<(msg: SerializedMessage) => void> = [];
 

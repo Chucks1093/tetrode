@@ -20,9 +20,9 @@ const games: Array<{
       status: GameStatus.ACTIVE,
       imageUrl: '/images/games/game-1.jpeg',
       maxPlayers: 4,
-      maxAgents: 3,
+      maxAgents: 2,
       maxActiveRooms: 100,
-      entryFee: new Prisma.Decimal('0.63'),
+      entryFee: new Prisma.Decimal('0.30'),
    },
    {
       publicId: 'hunt-the-ai',
@@ -34,7 +34,7 @@ const games: Array<{
       maxPlayers: 6,
       maxAgents: 5,
       maxActiveRooms: 100,
-      entryFee: new Prisma.Decimal('0.50'),
+      entryFee: new Prisma.Decimal('0.20'),
    },
    {
       publicId: 'mind-match',
@@ -46,7 +46,7 @@ const games: Array<{
       maxPlayers: 4,
       maxAgents: 3,
       maxActiveRooms: 100,
-      entryFee: new Prisma.Decimal('0.40'),
+      entryFee: new Prisma.Decimal('0.15'),
    },
    {
       publicId: 'mindflip',
@@ -58,7 +58,7 @@ const games: Array<{
       maxPlayers: 5,
       maxAgents: 4,
       maxActiveRooms: 100,
-      entryFee: new Prisma.Decimal('0.25'),
+      entryFee: new Prisma.Decimal('0.10'),
    },
 ];
 

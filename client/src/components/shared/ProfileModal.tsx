@@ -2,7 +2,7 @@
 
 import makeBlockie from 'ethereum-blockies-base64';
 import { Check, Copy, KeyRound, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useExportWallet } from '@privy-io/react-auth';
 import {
 	Dialog,
@@ -11,6 +11,36 @@ import {
 	DialogDescription,
 } from '@/components/ui/dialog';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { leaderboardService } from '@/services/leaderboard.service';
+import { playerService } from '@/services/player.service';
+
+const USDC_CONTRACT = '0x01C5C0122039549AD1493B8220cABEdD739BC44E';
+const CELO_RPC = 'https://forno.celo-sepolia.celo-testnet.org';
+
+async function fetchUsdcBalance(walletAddress: string): Promise<string> {
+	// balanceOf(address) selector
+	const selector = '0x70a08231';
+	const paddedAddr = walletAddress.toLowerCase().replace('0x', '').padStart(64, '0');
+	const data = selector + paddedAddr;
+
+	const res = await fetch(CELO_RPC, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({
+			jsonrpc: '2.0',
+			id: 1,
+			method: 'eth_call',
+			params: [{ to: USDC_CONTRACT, data }, 'latest'],
+		}),
+	});
+	const json = await res.json() as { result?: string };
+	if (!json.result || json.result === '0x') return '0.00';
+	const raw = BigInt(json.result);
+	// USDC has 6 decimals
+	const whole = raw / BigInt(1_000_000);
+	const frac = (raw % BigInt(1_000_000)).toString().padStart(6, '0').slice(0, 2);
+	return `${whole}.${frac}`;
+}
 
 interface ProfileModalProps {
 	open: boolean;
@@ -39,6 +69,23 @@ export default function ProfileModal({ open, onOpenChange }: ProfileModalProps) 
 	const user = useAuthStore(state => state.user);
 	const [copied, setCopied] = useState(false);
 	const { exportWallet } = useExportWallet();
+	const [cusdBalance, setCusdBalance] = useState<string | null>(null);
+	const [points, setPoints] = useState<number | null>(null);
+	const [gamesPlayed, setGamesPlayed] = useState<number | null>(null);
+
+	useEffect(() => {
+		if (!open) return;
+		const actorId = playerService.getIdentity().actorId;
+		leaderboardService.getMyStats(actorId).then(stats => {
+			setPoints(stats.points);
+			setGamesPlayed(stats.gamesPlayed);
+		}).catch(() => {});
+	}, [open]);
+
+	useEffect(() => {
+		if (!open || !user?.walletAddress) return;
+		fetchUsdcBalance(user.walletAddress).then(setCusdBalance).catch(() => {});
+	}, [open, user?.walletAddress]);
 
 	if (!user) return null;
 
@@ -86,9 +133,9 @@ export default function ProfileModal({ open, onOpenChange }: ProfileModalProps) 
 
 					{/* Stats */}
 					<div className="mt-6 grid w-full grid-cols-3 gap-2">
-						<StatCard label="USDC" value="—" />
-						<StatCard label="Points" value="—" />
-						<StatCard label="Games" value="—" />
+						<StatCard label="USDC" value={cusdBalance ?? '—'} />
+						<StatCard label="Points" value={points !== null ? points.toString() : '—'} />
+						<StatCard label="Games" value={gamesPlayed !== null ? gamesPlayed.toString() : '—'} />
 					</div>
 
 					{/* Wallet */}

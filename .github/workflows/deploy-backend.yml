@@ -9,7 +9,7 @@ on:
       - '.github/workflows/deploy-backend.yml'
 
 concurrency:
-  group: deploy-proofline-backend-production
+  group: deploy-tetrode-backend-production
   cancel-in-progress: false
 
 jobs:
@@ -64,19 +64,41 @@ jobs:
           ssh lightsail-target <<'EOF_SSH'
           set -euo pipefail
 
+          sudo mkdir -p /etc/tetrode
+          if [ ! -f /etc/tetrode/server.env ]; then
+            echo "Missing /etc/tetrode/server.env on the server"
+            exit 1
+          fi
+
+          if ! command -v curl >/dev/null 2>&1; then
+            sudo apt update
+            sudo apt install -y curl
+          fi
+
+          if [ ! -d "$HOME/.nvm" ]; then
+            curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+          fi
+
           export NVM_DIR="$HOME/.nvm"
           . "$NVM_DIR/nvm.sh"
+          nvm install 22 >/dev/null
           nvm use 22 >/dev/null
           corepack enable >/dev/null 2>&1 || true
+          corepack prepare pnpm@10.6.5 --activate >/dev/null 2>&1 || true
 
           APP_DIR="${{ secrets.LIGHTSAIL_APP_DIR }}"
           if [ -z "$APP_DIR" ]; then
-            APP_DIR="$HOME/proofline"
+            APP_DIR="$HOME/tetrode"
+          fi
+
+          REPO_URL="${{ github.server_url }}/${{ github.repository }}.git"
+
+          if [ ! -d "$APP_DIR/.git" ]; then
+            git clone "$REPO_URL" "$APP_DIR"
           fi
 
           cd "$APP_DIR"
-
-          git fetch origin main
+          git fetch origin main --tags
           git reset --hard origin/main
 
           cd "$APP_DIR/server"
@@ -85,19 +107,19 @@ jobs:
           pnpm exec prisma generate
           pnpm build
 
-          sudo install -D -m 644 "$APP_DIR/server/deploy/lightsail/proofline-api.service" /etc/systemd/system/proofline-api.service
+          sudo install -D -m 644 "$APP_DIR/server/deploy/lightsail/tetrode-api.service" /etc/systemd/system/tetrode-api.service
 
           if command -v nginx >/dev/null 2>&1; then
-            sudo install -D -m 644 "$APP_DIR/server/deploy/lightsail/nginx-proofline.conf" /etc/nginx/sites-available/proofline
-            sudo ln -sfn /etc/nginx/sites-available/proofline /etc/nginx/sites-enabled/proofline
+            sudo install -D -m 644 "$APP_DIR/server/deploy/lightsail/nginx-tetrode.conf" /etc/nginx/sites-available/tetrode
+            sudo ln -sfn /etc/nginx/sites-available/tetrode /etc/nginx/sites-enabled/tetrode
             sudo rm -f /etc/nginx/sites-enabled/default
             sudo nginx -t
             sudo systemctl reload nginx
           fi
 
           sudo systemctl daemon-reload
-          sudo systemctl enable --now proofline-api
-          sudo systemctl restart proofline-api
+          sudo systemctl enable --now tetrode-api
+          sudo systemctl restart tetrode-api
 
-          sudo systemctl --no-pager --full status proofline-api
+          sudo systemctl --no-pager --full status tetrode-api
           EOF_SSH

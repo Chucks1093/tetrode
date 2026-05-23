@@ -36,22 +36,9 @@ contract TetrodLeaderboard {
         _;
     }
 
-    // Called by the server after a human wins a game
-    function recordWin(address player, uint256 pointsAwarded) external onlyOracle {
-        if (player == address(0)) revert ZeroAddress();
+    event GameRecorded(address indexed player, uint256 gamesPlayed);
 
-        if (players[player].gamesPlayed == 0) {
-            playerList.push(player);
-        }
-
-        players[player].points += pointsAwarded;
-        players[player].gamesPlayed += 1;
-        players[player].gamesWon += 1;
-
-        emit WinRecorded(player, pointsAwarded, players[player].points);
-    }
-
-    // Called by the server to record a game played (whether won or lost)
+    // Called by the server when a room is created (game starts)
     function recordGame(address player) external onlyOracle {
         if (player == address(0)) revert ZeroAddress();
 
@@ -60,6 +47,24 @@ contract TetrodLeaderboard {
         }
 
         players[player].gamesPlayed += 1;
+
+        emit GameRecorded(player, players[player].gamesPlayed);
+    }
+
+    // Called by the server at game end if the human won — only adds points/win, NOT gamesPlayed
+    function recordWin(address player, uint256 pointsAwarded) external onlyOracle {
+        if (player == address(0)) revert ZeroAddress();
+
+        // recordGame is always called at room creation so player is already in playerList
+        // Fallback: add to list if somehow recordGame was never called
+        if (players[player].gamesPlayed == 0) {
+            playerList.push(player);
+        }
+
+        players[player].points += pointsAwarded;
+        players[player].gamesWon += 1;
+
+        emit WinRecorded(player, pointsAwarded, players[player].points);
     }
 
     function getPlayer(address player) external view returns (uint256 points, uint256 gamesPlayed, uint256 gamesWon) {

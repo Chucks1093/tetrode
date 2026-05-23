@@ -5,7 +5,7 @@ set -euo pipefail
 # Which local env file to sync to the server.
 # Default is .env.production (you can override with ENV_SYNC_SOURCE=.env)
 SOURCE_ENV_FILE="${ENV_SYNC_SOURCE:-.env.production}"
-REMOTE_TMP="/tmp/proofline-server.env"
+REMOTE_TMP="/tmp/tetrode-server.env"
 
 if [[ ! -f "${SOURCE_ENV_FILE}" ]]; then
   echo "Missing ${SOURCE_ENV_FILE}"
@@ -56,10 +56,14 @@ scp -i "${KEY_PATH}" -o StrictHostKeyChecking=no "${SOURCE_ENV_FILE}" "${LIGHTSA
 
 ssh -i "${KEY_PATH}" -o StrictHostKeyChecking=no "${LIGHTSAIL_USER}@${LIGHTSAIL_HOST}" <<'EOF'
 set -euo pipefail
-sudo mkdir -p /etc/proofline
-sudo cp /tmp/proofline-server.env /etc/proofline/server.env
-sudo chmod 600 /etc/proofline/server.env
-cp /tmp/proofline-server.env /home/ubuntu/proofline/server/.env
-sudo systemctl restart proofline-api
-echo "Production env synced and proofline-api restarted."
+sudo mkdir -p /etc/tetrode
+sudo cp /tmp/tetrode-server.env /etc/tetrode/server.env
+sudo chmod 600 /etc/tetrode/server.env
+if [[ -d /home/ubuntu/tetrode/server ]]; then
+  cp /tmp/tetrode-server.env /home/ubuntu/tetrode/server/.env
+fi
+if systemctl list-unit-files | grep -q '^tetrode-api'; then
+  sudo systemctl restart tetrode-api
+fi
+echo "Production env synced for tetrode."
 EOF

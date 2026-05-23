@@ -1,15 +1,33 @@
-import { createWalletClient, createPublicClient, http, parseAbi } from 'viem';
+import { createWalletClient, createPublicClient, http, parseAbi, defineChain } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { celo, celoAlfajores } from 'viem/chains';
+import { celo } from 'viem/chains';
 import { envConfig } from '../config';
 
+const USDC_ABI = parseAbi([
+	'function transferWithAuthorization(address from, address to, uint256 value, uint256 validAfter, uint256 validBefore, bytes32 nonce, uint8 v, bytes32 r, bytes32 s) external',
+]);
+
 const LEADERBOARD_ABI = parseAbi([
-	'function recordWin(address player, uint256 pointsAwarded) external',
 	'function recordGame(address player) external',
+	'function recordWin(address player, uint256 pointsAwarded) external',
 	'function getPlayer(address player) external view returns (uint256 points, uint256 gamesPlayed, uint256 gamesWon)',
 ]);
 
+const TETRODE_PASS_ABI = parseAbi([
+	'function balanceOf(address account) external view returns (uint256)',
+	'function mint(address to, uint256 amount) external',
+	'function adminBurn(address from, uint256 amount) external',
+]);
+
 const WIN_POINTS = BigInt(100);
+
+// Celo Sepolia is not in viem's built-in chain list
+const celoSepolia = defineChain({
+	id: 11142220,
+	name: 'Celo Sepolia',
+	nativeCurrency: { name: 'CELO', symbol: 'CELO', decimals: 18 },
+	rpcUrls: { default: { http: ['https://forno.celo-sepolia.celo-testnet.org'] } },
+});
 
 function getClients() {
 	const privateKey = envConfig.ORACLE_PRIVATE_KEY;
@@ -18,7 +36,7 @@ function getClients() {
 	if (!privateKey || !contractAddress) return null;
 
 	const account = privateKeyToAccount(privateKey as `0x${string}`);
-	const chain = envConfig.MODE === 'production' ? celo : celoAlfajores;
+	const chain = envConfig.MODE === 'production' ? celo : celoSepolia;
 
 	const walletClient = createWalletClient({ account, chain, transport: http() });
 	const publicClient = createPublicClient({ chain, transport: http() });
@@ -26,6 +44,41 @@ function getClients() {
 	return { walletClient, publicClient, account, contractAddress: contractAddress as `0x${string}` };
 }
 
+function getPassClients() {
+	const privateKey = envConfig.ORACLE_PRIVATE_KEY;
+	const contractAddress = envConfig.TETRODE_PASS_CONTRACT_ADDRESS;
+
+	if (!privateKey || !contractAddress) return null;
+
+	const account = privateKeyToAccount(privateKey as `0x${string}`);
+	const chain = envConfig.MODE === 'production' ? celo : celoSepolia;
+
+	const walletClient = createWalletClient({ account, chain, transport: http() });
+	const publicClient = createPublicClient({ chain, transport: http() });
+
+	return { walletClient, publicClient, account, contractAddress: contractAddress as `0x${string}` };
+}
+
+// Called at room creation (game start)
+export async function recordGame(playerWalletAddress: string): Promise<void> {
+	const clients = getClients();
+	if (!clients) return;
+
+	const { walletClient, contractAddress } = clients;
+
+	try {
+		await walletClient.writeContract({
+			address: contractAddress,
+			abi: LEADERBOARD_ABI,
+			functionName: 'recordGame',
+			args: [playerWalletAddress as `0x${string}`],
+		});
+	} catch (error) {
+		console.error('[leaderboard] recordGame failed:', error);
+	}
+}
+
+// Called at game end if human won — only adds points/win, NOT gamesPlayed
 export async function recordWin(playerWalletAddress: string): Promise<void> {
 	const clients = getClients();
 	if (!clients) return;
@@ -45,20 +98,142 @@ export async function recordWin(playerWalletAddress: string): Promise<void> {
 	}
 }
 
-export async function recordGame(playerWalletAddress: string): Promise<void> {
-	const clients = getClients();
-	if (!clients) return;
+// Check how many free passes a player has
+export async function getFreePassBalance(walletAddress: string): Promise<number> {
+	const clients = getPassClients();
+	if (!clients) return 0;
+
+	const { publicClient, contractAddress } = clients;
+
+	try {
+		const balance = await publicClient.readContract({
+			address: contractAddress,
+			abi: TETRODE_PASS_ABI,
+			functionName: 'balanceOf',
+			args: [walletAddress as `0x${string}`],
+		});
+		return Number(balance);
+	} catch (error) {
+		console.error('[tetrodepass] getFreePassBalance failed:', error);
+		return 0;
+	}
+}
+
+// Consume 1 free pass from a player's wallet (called at room creation)
+export async function useFreePass(walletAddress: string): Promise<boolean> {
+	const clients = getPassClients();
+	if (!clients) return false;
 
 	const { walletClient, contractAddress } = clients;
 
 	try {
 		await walletClient.writeContract({
 			address: contractAddress,
-			abi: LEADERBOARD_ABI,
-			functionName: 'recordGame',
-			args: [playerWalletAddress as `0x${string}`],
+			abi: TETRODE_PASS_ABI,
+			functionName: 'adminBurn',
+			args: [walletAddress as `0x${string}`, BigInt(1)],
 		});
+		return true;
 	} catch (error) {
-		console.error('[leaderboard] recordGame failed:', error);
+		console.error('[tetrodepass] useFreePass failed:', error);
+		return false;
+	}
+}
+
+// Relay a USDC transferWithAuthorization — user signs, we pay gas
+export async function relayUsdcTransfer(auth: {
+	from: string;
+	to: string;
+	value: string;
+	validAfter: string;
+	validBefore: string;
+	nonce: string;
+	signature: string;
+}): Promise<boolean> {
+	const privateKey = envConfig.ORACLE_PRIVATE_KEY;
+	const usdcContract = envConfig.USDC_CONTRACT_ADDRESS;
+	if (!privateKey || !usdcContract) return false;
+
+	// Split 65-byte signature into v, r, s
+	const sig = auth.signature.startsWith('0x') ? auth.signature : `0x${auth.signature}`;
+	const r = sig.slice(0, 66) as `0x${string}`;
+	const s = `0x${sig.slice(66, 130)}` as `0x${string}`;
+	let v = parseInt(sig.slice(130, 132), 16);
+	if (v < 27) v += 27; // normalize to 27/28
+
+	const account = privateKeyToAccount(privateKey as `0x${string}`);
+	const chain = envConfig.MODE === 'production' ? celo : celoSepolia;
+	const walletClient = createWalletClient({ account, chain, transport: http() });
+	const publicClient = createPublicClient({ chain, transport: http() });
+
+	try {
+		const hash = await walletClient.writeContract({
+			address: usdcContract as `0x${string}`,
+			abi: USDC_ABI,
+			functionName: 'transferWithAuthorization',
+			args: [
+				auth.from as `0x${string}`,
+				auth.to as `0x${string}`,
+				BigInt(auth.value),
+				BigInt(auth.validAfter),
+				BigInt(auth.validBefore),
+				auth.nonce as `0x${string}`,
+				v,
+				r,
+				s,
+			],
+		});
+
+		const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
+		return receipt.status === 'success';
+	} catch (error) {
+		console.error('[usdc] relayUsdcTransfer failed:', error);
+		return false;
+	}
+}
+
+// Transfer(address indexed from, address indexed to, uint256 value)
+const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+
+export async function verifyUsdcPayment(
+	txHash: string,
+	fromAddress: string,
+	minAmountUsdc: number
+): Promise<boolean> {
+	const treasuryWallet = envConfig.TREASURY_WALLET_ADDRESS;
+	const usdcContract = envConfig.USDC_CONTRACT_ADDRESS;
+	if (!treasuryWallet || !usdcContract) return false;
+
+	try {
+		const publicClient = createPublicClient({
+			chain: envConfig.MODE === 'production' ? celo : celoSepolia,
+			transport: http(),
+		});
+
+		const receipt = await publicClient.getTransactionReceipt({ hash: txHash as `0x${string}` });
+		if (!receipt || receipt.status !== 'success') return false;
+
+		const minAmount = BigInt(Math.round(minAmountUsdc * 1_000_000)); // USDC = 6 decimals
+
+		for (const log of receipt.logs) {
+			if (log.address.toLowerCase() !== usdcContract.toLowerCase()) continue;
+			if (log.topics[0]?.toLowerCase() !== TRANSFER_TOPIC) continue;
+			if (log.topics.length < 3) continue;
+
+			const logFrom = '0x' + log.topics[1]!.slice(26);
+			const logTo   = '0x' + log.topics[2]!.slice(26);
+			const amount  = BigInt(log.data);
+
+			if (
+				logFrom.toLowerCase() === fromAddress.toLowerCase() &&
+				logTo.toLowerCase()   === treasuryWallet.toLowerCase() &&
+				amount >= minAmount
+			) {
+				return true;
+			}
+		}
+		return false;
+	} catch {
+		return false;
 	}
 }

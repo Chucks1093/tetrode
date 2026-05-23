@@ -3,6 +3,8 @@ import { AsyncController } from '../../types/auth.types';
 import { HTTP_STATUS } from '../../utils/logger.utils';
 import { prisma } from '../../utils/prisma.utils';
 import { io } from '../../socket';
+import { relayUsdcTransfer, getFreePassBalance, useFreePass, recordGame } from '../../services/leaderboard.service';
+import { envConfig } from '../../config';
 import { getGameHandler } from '../games/game-registry';
 import {
 	CreateRoomSchema,
@@ -34,6 +36,41 @@ export const httpCreateRoom: AsyncController = async (req, res, next) => {
 				data: null,
 			});
 		}
+
+		// ── Entry fee gate ─────────────────────────────────────────────────────
+		const { usdcAuthorization, walletAddress } = validated;
+		const entryFee = game.entryFee.toString();
+
+		if (usdcAuthorization) {
+			// Player signed a USDC transferWithAuthorization — we relay it (we pay gas)
+			const transferred = await relayUsdcTransfer(usdcAuthorization);
+			if (!transferred) {
+				return res.status(402).json({
+					success: false,
+					message: 'Payment could not be processed. Please try again.',
+					data: { requiresPayment: true, entryFee },
+				});
+			}
+		} else if (walletAddress) {
+			// No USDC payment — check if they have a free pass
+			const passBalance = await getFreePassBalance(walletAddress);
+			if (passBalance > 0) {
+				void useFreePass(walletAddress);
+			} else {
+				return res.status(402).json({
+					success: false,
+					message: 'Entry fee required',
+					data: { requiresPayment: true, entryFee },
+				});
+			}
+		} else {
+			return res.status(402).json({
+				success: false,
+				message: 'Entry fee required',
+				data: { requiresPayment: true, entryFee },
+			});
+		}
+		// ── End entry fee gate ─────────────────────────────────────────────────
 
 		const createdAgentSessionIds: string[] = [];
 
@@ -78,6 +115,11 @@ export const httpCreateRoom: AsyncController = async (req, res, next) => {
 				message: 'Room created successfully',
 				data: serializeRoom(room),
 			});
+
+			// Record the game on-chain at start so it's counted even if player leaves early
+			if (validated.walletAddress) {
+				void recordGame(validated.walletAddress);
+			}
 
 			getGameHandler(game.publicId)?.onRoomStart(room.publicId, room.id, room.participants);
 

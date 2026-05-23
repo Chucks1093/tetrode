@@ -3,11 +3,22 @@ import { z } from 'zod';
 export const RoomStatusSchema = z.enum(['WAITING', 'ACTIVE', 'FINISHED']);
 export const ParticipantTypeSchema = z.enum(['HUMAN', 'AI']);
 
+export const UsdcAuthorizationSchema = z.object({
+   from: z.string().trim(),
+   to: z.string().trim(),
+   value: z.string().trim(),
+   validAfter: z.string().trim(),
+   validBefore: z.string().trim(),
+   nonce: z.string().trim(),
+   signature: z.string().trim(),
+});
+
 export const CreateRoomSchema = z.object({
    gameId: z.string().trim().min(1),
    actorId: z.string().trim().min(1).max(191),
    displayName: z.string().trim().min(1).max(32),
    walletAddress: z.string().trim().optional(),
+   usdcAuthorization: UsdcAuthorizationSchema.optional(),
 });
 
 export const ListRoomsQuerySchema = z.object({
