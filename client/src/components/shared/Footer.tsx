@@ -1,17 +1,8 @@
 import { Link } from 'react-router';
 
-const navLinks = [
-	{ label: 'Leaderboard', href: '#' },
-	{ label: 'Twitter', href: '#' },
-	{ label: 'Community', href: '#' },
-	{ label: 'About', href: '#' },
-];
+const navLinks = ['Leaderboard', 'Twitter', 'Community', 'About'];
 
-const legalLinks = [
-	{ label: 'Privacy Policy', href: '#' },
-	{ label: 'Terms of Use', href: '#' },
-	{ label: 'Cookie Preferences', href: '#' },
-];
+const legalLinks = ['Privacy Policy', 'Terms of Use', 'Cookie Preferences'];
 
 export default function Footer() {
 	return (
@@ -29,14 +20,13 @@ export default function Footer() {
 
 					{/* Nav links */}
 					<nav className="flex flex-wrap gap-x-8 gap-y-3">
-						{navLinks.map(link => (
-							<a
-								key={link.label}
-								href={link.href}
-								className="font-ps2p text-[8px] uppercase tracking-widest text-text-muted transition-colors hover:text-text-primary"
+						{navLinks.map(label => (
+							<span
+								key={label}
+								className="font-ps2p text-[8px] uppercase tracking-widest text-text-muted"
 							>
-								{link.label}
-							</a>
+								{label}
+							</span>
 						))}
 					</nav>
 				</div>
@@ -52,14 +42,13 @@ export default function Footer() {
 					</p>
 
 					<nav className="flex flex-wrap gap-x-6 gap-y-2">
-						{legalLinks.map(link => (
-							<a
-								key={link.label}
-								href={link.href}
-								className="text-[11px] text-text-muted transition-colors hover:text-text-secondary"
+						{legalLinks.map(label => (
+							<span
+								key={label}
+								className="text-[11px] text-text-muted"
 							>
-								{link.label}
-							</a>
+								{label}
+							</span>
 						))}
 					</nav>
 				</div>
