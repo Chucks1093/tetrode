@@ -109,8 +109,8 @@ export default function Header() {
 										alt={user.name}
 										className="size-7 rounded-sm"
 									/>
-									{/* Name truncated */}
-									<span className="max-w-[96px] truncate font-ps2p text-[8px] uppercase tracking-wider text-text-secondary group-hover:text-text-primary">
+									{/* Name truncated — hidden on mobile */}
+									<span className="hidden max-w-[96px] truncate font-ps2p text-[8px] uppercase tracking-wider text-text-secondary group-hover:text-text-primary sm:inline">
 										{user.name}
 									</span>
 								</button>
