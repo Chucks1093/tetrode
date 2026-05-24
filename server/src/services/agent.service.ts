@@ -316,7 +316,9 @@ class AgentService {
 
    private async canListSessions() {
       try {
-         await this.request<OpenCodeSession[]>('/session');
+         await this.request<OpenCodeSession[]>('/session', {
+            timeoutMs: 1000,
+         });
          return true;
       } catch {
          return false;
@@ -332,15 +334,35 @@ class AgentService {
       init?: {
          method?: 'GET' | 'POST' | 'DELETE';
          body?: unknown;
+         timeoutMs?: number;
       }
    ) {
-      const response = await fetch(`${this.getServerUrl()}${pathname}`, {
-         method: init?.method ?? 'GET',
-         headers: {
-            'Content-Type': 'application/json',
-         },
-         body: init?.body ? JSON.stringify(init.body) : undefined,
-      });
+      const controller = new AbortController();
+      const timeoutMs = init?.timeoutMs ?? 15000;
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+      let response: Response;
+
+      try {
+         response = await fetch(`${this.getServerUrl()}${pathname}`, {
+            method: init?.method ?? 'GET',
+            headers: {
+               'Content-Type': 'application/json',
+            },
+            body: init?.body ? JSON.stringify(init.body) : undefined,
+            signal: controller.signal,
+         });
+      } catch (error) {
+         if (error instanceof Error && error.name === 'AbortError') {
+            throw new Error(
+               `OpenCode request timed out after ${timeoutMs}ms: ${pathname}`
+            );
+         }
+
+         throw error;
+      } finally {
+         clearTimeout(timeout);
+      }
 
       if (!response.ok) {
          const errorText = await response.text();
