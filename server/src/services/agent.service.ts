@@ -158,8 +158,8 @@ class AgentService {
    }
 
    private async startServerInternal() {
-      const existingHealth = await this.getHealth().catch(() => null);
-      if (existingHealth?.healthy) {
+      const existingServerReady = await this.isServerReady();
+      if (existingServerReady) {
          this.serverUrl = envConfig.OPENCODE_BASE_URL;
          this.serverStartedByService = false;
          return this.getServerUrl();
@@ -291,8 +291,8 @@ class AgentService {
             );
          }
 
-         const health = await this.getHealth().catch(() => null);
-         if (health?.healthy) {
+         const ready = await this.isServerReady();
+         if (ready) {
             return;
          }
 
@@ -302,6 +302,25 @@ class AgentService {
       throw new Error(
          `Timed out waiting for OpenCode server at ${this.getServerUrl()}.\n${this.serverLog.trim()}`
       );
+   }
+
+   private async isServerReady() {
+      const apiReady = await this.canListSessions();
+      if (apiReady) {
+         return true;
+      }
+
+      const health = await this.getHealth().catch(() => null);
+      return Boolean(health?.healthy);
+   }
+
+   private async canListSessions() {
+      try {
+         await this.request<OpenCodeSession[]>('/session');
+         return true;
+      } catch {
+         return false;
+      }
    }
 
    private async getHealth() {
