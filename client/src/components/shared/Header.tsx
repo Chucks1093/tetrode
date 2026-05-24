@@ -101,7 +101,7 @@ export default function Header() {
 							<DropdownMenuTrigger asChild>
 								<button
 									type="button"
-									className="group flex items-center gap-2.5 rounded-sm border border-surface-3 bg-surface-1 py-1.5 pl-1.5 pr-3 transition-all hover:border-surface-4 hover:bg-surface-2 focus:outline-none"
+									className="group flex items-center gap-2.5 rounded-sm border border-surface-3 bg-surface-1 py-1.5 pl-1.5 pr-1.5 transition-all hover:border-surface-4 hover:bg-surface-2 focus:outline-none sm:pr-3"
 								>
 									{/* Blockie avatar */}
 									<img

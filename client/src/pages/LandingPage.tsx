@@ -175,13 +175,13 @@ export default function LandingPage() {
 					</div>
 
 					{/* ── Filter tabs ───────────────────────────────────────────── */}
-					<div className="mt-14 flex w-full gap-1 overflow-x-auto rounded-sm border border-surface-3 bg-surface-1 p-1 sm:w-fit sm:mx-auto">
+					<div className="mt-14 grid grid-cols-3 gap-1 rounded-sm border border-surface-3 bg-surface-1 p-1 sm:flex sm:w-fit sm:mx-auto">
 						{categories.map(category => (
 							<button
 								key={category}
 								type="button"
 								onClick={() => setActiveCategory(category)}
-								className={`rounded-sm border px-6 py-2.5 font-ps2p text-[9px] uppercase tracking-wider transition-all ${
+								className={`rounded-sm border px-4 py-2.5 font-ps2p text-[8px] uppercase tracking-wider transition-all sm:px-6 sm:text-[9px] ${
 									activeCategory === category
 										? 'border-gold-base/30 bg-gold-base/15 text-gold-base'
 										: 'border-transparent bg-transparent text-text-muted hover:bg-surface-2 hover:text-text-primary'
