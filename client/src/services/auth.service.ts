@@ -36,12 +36,27 @@ export interface LoginData {
 class AuthService extends BaseApiService {
 	private SESSION_TOKEN_KEY = 'tetrode_session_token';
 	private REDIRECT_AFTER_LOGIN_KEY = 'tetrode_redirect_after_login';
+	private PRIVY_TOKEN_TTL_MS = 30_000;
 	private subscribers = new Set<AuthSubscriber>();
+	private privyTokenCache?: {
+		sessionToken: string;
+		token: string;
+		fetchedAt: number;
+	};
+	private privyTokenInFlight?: Promise<string | undefined>;
 
 	private setSessionToken(token?: string): void {
 		if (!token) return;
+		if (token !== this.getSessionToken()) {
+			this.clearPrivyAuthTokenCache();
+		}
 		localStorage.setItem(this.SESSION_TOKEN_KEY, token);
 		this.notify();
+	}
+
+	private clearPrivyAuthTokenCache(): void {
+		this.privyTokenCache = undefined;
+		this.privyTokenInFlight = undefined;
 	}
 
 	private notify(): void {
@@ -151,14 +166,44 @@ class AuthService extends BaseApiService {
 
 	async getPrivyAuthToken(): Promise<string | undefined> {
 		if (!this.isAuthenticated()) return undefined;
+		const sessionToken = this.getSessionToken();
+		if (!sessionToken) return undefined;
+
+		if (
+			this.privyTokenCache?.sessionToken === sessionToken &&
+			Date.now() - this.privyTokenCache.fetchedAt < this.PRIVY_TOKEN_TTL_MS
+		) {
+			return this.privyTokenCache.token;
+		}
+
+		if (this.privyTokenInFlight) {
+			return this.privyTokenInFlight;
+		}
+
+		this.privyTokenInFlight = (async () => {
+			try {
+				const response = await this.api.get<APIResponse<PrivyTokenResponse>>(
+					'/profile/privy/token'
+				);
+				const token = response.data.data.token;
+				this.privyTokenCache = {
+					sessionToken,
+					token,
+					fetchedAt: Date.now(),
+				};
+				return token;
+			} catch (error) {
+				console.error('Failed to get Privy auth token:', error);
+				return undefined;
+			} finally {
+				this.privyTokenInFlight = undefined;
+			}
+		})();
+
 		try {
-			const response = await this.api.get<APIResponse<PrivyTokenResponse>>(
-				'/profile/privy/token'
-			);
-			return response.data.data.token;
-		} catch (error) {
-			console.error('Failed to get Privy auth token:', error);
-			return undefined;
+			return await this.privyTokenInFlight;
+		} finally {
+			// The in-flight promise is cleared by the fetch block above.
 		}
 	}
 
@@ -259,6 +304,7 @@ class AuthService extends BaseApiService {
 	protected override clearAuth(): void {
 		useAuthStore.getState().clearUser();
 		localStorage.removeItem(this.SESSION_TOKEN_KEY);
+		this.clearPrivyAuthTokenCache();
 	}
 }
 
