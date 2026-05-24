@@ -146,6 +146,26 @@ export async function useFreePass(walletAddress: string): Promise<boolean> {
 	}
 }
 
+// Mint 1 free pass to a new user's wallet
+export async function mintFreePass(walletAddress: string): Promise<void> {
+	const clients = getPassClients();
+	if (!clients) return;
+
+	const { walletClient, contractAddress } = clients;
+
+	try {
+		await walletClient.writeContract({
+			address: contractAddress,
+			abi: TETRODE_PASS_ABI,
+			functionName: 'mint',
+			args: [walletAddress as `0x${string}`, BigInt(1)],
+		});
+		console.log(`[tetrodepass] minted 1 pass to ${walletAddress}`);
+	} catch (error) {
+		console.error('[tetrodepass] mintFreePass failed:', error);
+	}
+}
+
 // Relay a USDC transferWithAuthorization — user signs, we pay gas
 export async function relayUsdcTransfer(auth: {
 	from: string;

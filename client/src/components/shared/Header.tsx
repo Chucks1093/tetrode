@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { getFreePassBalance } from '@/services/leaderboard.service';
 import ProfileModal from './ProfileModal';
 
 export default function Header() {
@@ -22,6 +23,7 @@ export default function Header() {
 	const [isAuthBusy, setIsAuthBusy] = useState(false);
 	const [copied, setCopied] = useState(false);
 	const [profileOpen, setProfileOpen] = useState(false);
+	const [passBalance, setPassBalance] = useState<number | null>(null);
 
 	const copyWallet = async () => {
 		if (!user?.walletAddress) return;
@@ -33,6 +35,11 @@ export default function Header() {
 	useEffect(() => {
 		setIsAuthenticated(!!user && authService.isAuthenticated());
 	}, [user]);
+
+	useEffect(() => {
+		if (!user?.walletAddress) return;
+		getFreePassBalance(user.walletAddress).then(setPassBalance);
+	}, [user?.walletAddress]);
 
 	const handleLogout = async () => {
 		try {
@@ -103,12 +110,19 @@ export default function Header() {
 									type="button"
 									className="group flex items-center gap-2.5 rounded-sm border border-surface-3 bg-surface-1 py-1.5 pl-1.5 pr-1.5 transition-all hover:border-surface-4 hover:bg-surface-2 focus:outline-none sm:pr-3"
 								>
-									{/* Blockie avatar */}
-									<img
-										src={blockie!}
-										alt={user.name}
-										className="size-7 rounded-sm"
-									/>
+									{/* Blockie avatar with pass badge */}
+									<div className="relative">
+										<img
+											src={blockie!}
+											alt={user.name}
+											className="size-7 rounded-sm"
+										/>
+										{passBalance !== null && passBalance > 0 && (
+											<span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-gold-base font-ps2p text-[7px] text-black">
+												{passBalance}
+											</span>
+										)}
+									</div>
 									{/* Name truncated — hidden on mobile */}
 									<span className="hidden max-w-[96px] truncate font-ps2p text-[8px] uppercase tracking-wider text-text-secondary group-hover:text-text-primary sm:inline">
 										{user.name}
@@ -123,11 +137,18 @@ export default function Header() {
 							>
 								{/* User info */}
 								<div className="flex items-center gap-3 px-3 py-3">
-									<img
-										src={blockie!}
-										alt={user.name}
-										className="size-10 rounded-sm"
-									/>
+									<div className="relative shrink-0">
+										<img
+											src={blockie!}
+											alt={user.name}
+											className="size-10 rounded-sm"
+										/>
+										{passBalance !== null && passBalance > 0 && (
+											<span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-gold-base font-ps2p text-[7px] text-black">
+												{passBalance}
+											</span>
+										)}
+									</div>
 									<div className="min-w-0">
 										<p className="truncate font-manrope text-sm font-semibold text-text-primary">
 											{user.name}

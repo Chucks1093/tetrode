@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import { mintFreePass } from '../../services/leaderboard.service';
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { createPrivateKey, createSign } from 'crypto';
@@ -673,11 +674,16 @@ export const httpProfileUpdateWallet: AsyncController = async (
       }
 
       const validated = ProfileWalletSchema.parse(req.body);
+      const isFirstWallet = !req.currentProfile.walletAddress;
 
       const updatedProfile = await updateProfileWalletAddress({
          profileId: req.currentProfile.id,
          walletAddress: validated.walletAddress,
       });
+
+      if (isFirstWallet) {
+         void mintFreePass(validated.walletAddress);
+      }
 
       return res.status(HTTP_STATUS.OK).json({
          success: true,

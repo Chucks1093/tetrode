@@ -11,7 +11,7 @@ import {
 	DialogDescription,
 } from '@/components/ui/dialog';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { leaderboardService } from '@/services/leaderboard.service';
+import { leaderboardService, getFreePassBalance } from '@/services/leaderboard.service';
 import { playerService } from '@/services/player.service';
 
 const USDC_CONTRACT = '0xcebA9300f2b948710d2653dD7B07f33A8B32118C';
@@ -70,6 +70,7 @@ export default function ProfileModal({ open, onOpenChange }: ProfileModalProps) 
 	const [copied, setCopied] = useState(false);
 	const { exportWallet } = useExportWallet();
 	const [cusdBalance, setCusdBalance] = useState<string | null>(null);
+	const [passBalance, setPassBalance] = useState<number | null>(null);
 	const [points, setPoints] = useState<number | null>(null);
 	const [gamesPlayed, setGamesPlayed] = useState<number | null>(null);
 
@@ -85,6 +86,7 @@ export default function ProfileModal({ open, onOpenChange }: ProfileModalProps) 
 	useEffect(() => {
 		if (!open || !user?.walletAddress) return;
 		fetchUsdcBalance(user.walletAddress).then(setCusdBalance).catch(() => {});
+		getFreePassBalance(user.walletAddress).then(setPassBalance).catch(() => {});
 	}, [open, user?.walletAddress]);
 
 	if (!user) return null;
@@ -115,11 +117,18 @@ export default function ProfileModal({ open, onOpenChange }: ProfileModalProps) 
 
 				<div className="flex flex-col items-center px-8 pb-6 pt-10">
 					{/* Avatar */}
-					<img
-						src={blockie}
-						alt={user.name}
-						className="size-20 rounded-xl"
-					/>
+					<div className="relative">
+						<img
+							src={blockie}
+							alt={user.name}
+							className="size-20 rounded-xl"
+						/>
+						{passBalance !== null && passBalance > 0 && (
+							<span className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-gold-base font-ps2p text-[8px] font-bold text-black shadow">
+								{passBalance}
+							</span>
+						)}
+					</div>
 
 					{/* Identity */}
 					<div className="mt-4 text-center">
@@ -176,6 +185,11 @@ export default function ProfileModal({ open, onOpenChange }: ProfileModalProps) 
 					<p className="font-ps2p text-[7px] uppercase tracking-widest text-text-muted">
 						Member since {new Date(user.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
 					</p>
+					{passBalance !== null && passBalance > 0 && (
+						<p className="mt-1.5 font-ps2p text-[7px] uppercase tracking-widest text-gold-base">
+							{passBalance} free {passBalance === 1 ? 'pass' : 'passes'} available
+						</p>
+					)}
 				</div>
 			</DialogContent>
 		</Dialog>

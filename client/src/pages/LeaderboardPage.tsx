@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
+import { Dice5 } from 'lucide-react';
 import Header from '@/components/shared/Header';
 import Footer from '@/components/shared/Footer';
 import { playerService } from '@/services/player.service';
@@ -190,103 +191,58 @@ export default function LeaderboardPage() {
 						</div>
 					</div>
 
-					{/* ── Tabs ──────────────────────────────────────────── */}
-					<div className="flex w-fit gap-1 rounded-sm border border-surface-3 bg-surface-1 p-1">
-						{tabs.map(tab => (
-							<button
-								key={tab.value}
-								type="button"
-								onClick={() => setActiveTab(tab.value)}
-								className={`rounded-sm border px-6 py-2.5 font-ps2p text-[9px] uppercase tracking-wider transition-all ${
-									activeTab === tab.value
-										? 'border-gold-base/30 bg-gold-base/15 text-gold-base'
-										: 'border-transparent bg-transparent text-text-muted hover:bg-surface-2 hover:text-text-primary'
-								}`}
-							>
-								{tab.label}
-							</button>
-						))}
-					</div>
-
-					{/* ── Rankings ──────────────────────────────────────── */}
-					<div className="overflow-hidden rounded-sm border border-surface-3">
-						{/* Header row */}
-						<div className="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-4 border-b border-surface-3 bg-surface-1 px-5 py-3 text-[9px] uppercase tracking-widest text-text-muted font-ps2p">
-							<span>#</span>
-							<span>Player</span>
-							<span className="text-right">W/P</span>
-							<span className="text-right">Games</span>
-							<span className="text-right">Points</span>
-						</div>
-
-						{isLoading ? (
-							Array.from({ length: 8 }).map((_, i) => (
-								<div key={i} className="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-4 border-b border-surface-3 px-5 py-4 last:border-0">
-									<div className="h-4 w-6 animate-pulse rounded bg-surface-3" />
-									<div className="h-4 w-32 animate-pulse rounded bg-surface-3" />
-									<div className="h-4 w-10 animate-pulse rounded bg-surface-3" />
-									<div className="h-4 w-8 animate-pulse rounded bg-surface-3" />
-									<div className="h-4 w-12 animate-pulse rounded bg-surface-3" />
-								</div>
-							))
-						) : entries.length === 0 ? (
-							<div className="px-5 py-16 text-center">
-								<p className="font-ps2p text-[9px] uppercase tracking-widest text-text-muted">
-									No entries yet
-								</p>
-								<p className="mt-2 text-sm text-text-muted">
-									Play a game to appear on the leaderboard.
-								</p>
-							</div>
-						) : (
-							entries.map(entry => {
-								const isMe = entry.type === 'HUMAN' && entry.displayName === player.displayName;
-								return (
-									<div
-										key={`${entry.type}-${entry.rank}`}
-										className={`grid grid-cols-[2rem_1fr_auto_auto_auto] items-center gap-4 border-b border-surface-3 px-5 py-4 last:border-0 transition-colors ${
-											isMe ? 'bg-gold-base/5' : 'hover:bg-surface-1'
+					{/* ── Tabs + Rankings (blurred — coming soon) ───────── */}
+					<div className="relative">
+						<div className="pointer-events-none select-none blur-sm">
+							<div className="flex w-fit gap-1 rounded-sm border border-surface-3 bg-surface-1 p-1">
+								{tabs.map(tab => (
+									<button
+										key={tab.value}
+										type="button"
+										className={`rounded-sm border px-6 py-2.5 font-ps2p text-[9px] uppercase tracking-wider ${
+											tab.value === 'ALL'
+												? 'border-gold-base/30 bg-gold-base/15 text-gold-base'
+												: 'border-transparent bg-transparent text-text-muted'
 										}`}
 									>
-										<RankNumber rank={entry.rank} />
-										<div className="flex min-w-0 items-center gap-3">
-											<span className="truncate text-sm font-medium text-text-primary">
-												{entry.displayName}
-											</span>
-											{isMe && (
-												<span className="shrink-0 font-ps2p text-[7px] uppercase tracking-wider text-gold-base">
-													You
-												</span>
-											)}
-											<TypeBadge type={entry.type} />
-										</div>
-										<span className="text-right text-sm text-text-muted">
-											{Math.round(entry.winRate * 100)}%
-										</span>
-										<span className="text-right text-sm text-text-muted">
-											{entry.gamesPlayed}
-										</span>
-										<span className="text-right font-ps2p text-sm text-text-primary">
-											{entry.points.toLocaleString()}
-										</span>
-									</div>
-								);
-							})
-						)}
-					</div>
+										{tab.label}
+									</button>
+								))}
+							</div>
 
-					{/* ── Load more ─────────────────────────────────────── */}
-					{hasMore && (
-						<div className="flex justify-center">
-							<button
-								type="button"
-								onClick={() => void loadMore()}
-								className="rounded-sm border border-surface-3 bg-surface-1 px-8 py-3 font-ps2p text-[9px] uppercase tracking-wider text-text-muted transition-all hover:border-surface-4 hover:text-text-primary"
-							>
-								Load More
-							</button>
+							<div className="mt-6 overflow-hidden rounded-sm border border-surface-3">
+								<div className="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-4 border-b border-surface-3 bg-surface-1 px-5 py-3 text-[9px] uppercase tracking-widest text-text-muted font-ps2p">
+									<span>#</span>
+									<span>Player</span>
+									<span className="text-right">W/P</span>
+									<span className="text-right">Games</span>
+									<span className="text-right">Points</span>
+								</div>
+								{Array.from({ length: 6 }).map((_, i) => (
+									<div key={i} className="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-4 border-b border-surface-3 px-5 py-4 last:border-0">
+										<div className="h-4 w-6 rounded bg-surface-3" />
+										<div className="h-4 w-32 rounded bg-surface-3" />
+										<div className="h-4 w-10 rounded bg-surface-3" />
+										<div className="h-4 w-8 rounded bg-surface-3" />
+										<div className="h-4 w-12 rounded bg-surface-3" />
+									</div>
+								))}
+							</div>
 						</div>
-					)}
+
+						{/* Coming soon badge */}
+						<div className="absolute inset-0 flex items-center justify-center">
+							<div className="flex flex-col items-center gap-3 rounded-sm border border-surface-3 bg-black/80 px-10 py-7 backdrop-blur-sm">
+								<Dice5 className="size-8 text-gold-base" strokeWidth={1.5} />
+								<p className="font-ps2p text-[10px] uppercase tracking-widest text-text-primary">
+									Coming Soon
+								</p>
+								<p className="text-center text-xs text-text-muted">
+									Full rankings unlock as the season heats up.
+								</p>
+							</div>
+						</div>
+					</div>
 
 					<Footer />
 				</main>
