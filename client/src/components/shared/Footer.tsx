@@ -1,8 +1,16 @@
 import { Link } from 'react-router';
 
-const navLinks = ['Leaderboard', 'Twitter', 'Community', 'About'];
+const navLinks = [
+	{ label: 'Leaderboard', href: '/leaderboard', external: false },
+	{ label: 'Twitter', href: 'https://x.com/tetrodegames', external: true },
+	{ label: 'Community', href: 'https://t.me/tetrodegames', external: true },
+	{ label: 'About', href: '/about', external: false },
+];
 
-const legalLinks = ['Privacy Policy', 'Terms of Use', 'Cookie Preferences'];
+const legalLinks = [
+	{ label: 'Privacy Policy', href: '/privacy-policy', external: false },
+	{ label: 'Terms of Use', href: '/terms', external: false },
+];
 
 export default function Footer() {
 	return (
@@ -20,14 +28,27 @@ export default function Footer() {
 
 					{/* Nav links */}
 					<nav className="flex flex-wrap gap-x-8 gap-y-3">
-						{navLinks.map(label => (
-							<span
-								key={label}
-								className="font-ps2p text-[8px] uppercase tracking-widest text-text-muted"
-							>
-								{label}
-							</span>
-						))}
+						{navLinks.map(({ label, href, external }) =>
+							external ? (
+								<a
+									key={label}
+									href={href}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="font-ps2p text-[8px] uppercase tracking-widest text-text-muted transition-colors hover:text-text-primary"
+								>
+									{label}
+								</a>
+							) : (
+								<Link
+									key={label}
+									to={href}
+									className="font-ps2p text-[8px] uppercase tracking-widest text-text-muted transition-colors hover:text-text-primary"
+								>
+									{label}
+								</Link>
+							)
+						)}
 					</nav>
 				</div>
 
@@ -35,20 +56,21 @@ export default function Footer() {
 				<div className="my-8 border-t border-surface-3" />
 
 				{/* Bottom row */}
-				<div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+				<div className="flex flex-col items-start justify-between gap-4 pb-8 sm:flex-row sm:items-center">
 					<p className="text-[11px] text-text-muted">
 						© {new Date().getFullYear()} Tetrode. Humans vs AI — may the
 						best mind win.
 					</p>
 
 					<nav className="flex flex-wrap gap-x-6 gap-y-2">
-						{legalLinks.map(label => (
-							<span
+						{legalLinks.map(({ label, href }) => (
+							<Link
 								key={label}
-								className="text-[11px] text-text-muted"
+								to={href}
+								className="text-[11px] text-text-muted transition-colors hover:text-text-primary"
 							>
 								{label}
-							</span>
+							</Link>
 						))}
 					</nav>
 				</div>

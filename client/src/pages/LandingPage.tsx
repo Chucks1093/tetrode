@@ -54,7 +54,7 @@ export default function LandingPage() {
 			<Header />
 			<Outlet />
 
-			<div className="relative z-40 mx-auto min-h-screen max-w-6xl px-4 pb-8 pt-24 sm:px-6 sm:pt-30">
+			<div className="relative z-40 mx-auto min-h-screen max-w-6xl px-4 pb-8 pt-26 sm:px-6 sm:pt-30">
 				<main>
 					{/* ── Hero ─────────────────────────────────────────────────── */}
 					<div className="relative mt-4 overflow-hidden rounded-2xl border border-gold-base/15">
@@ -73,38 +73,38 @@ export default function LandingPage() {
 						{/* Noise texture */}
 						<div className=" noise z-30 check h-screenn absolute" />
 
-						{/* Corner badges */}
-						<div className="absolute left-0 top-0 border-b border-r border-gold-base/15 bg-gold-base/5 px-2.5 py-2 sm:px-4 sm:py-2.5">
+						{/* Corner badges — hidden on xs to avoid overlap */}
+						<div className="absolute left-0 top-0 hidden border-b border-r border-gold-base/15 bg-gold-base/5 px-3 py-2 sm:block sm:px-4 sm:py-2.5">
 							<p className="font-ps2p text-[7px] uppercase tracking-[0.22em] text-gold-base/50">
 								Tetrode Arena
 							</p>
 						</div>
-						<div className="absolute right-0 top-0 border-b border-l border-gold-base/15 bg-gold-base/5 px-2.5 py-2 sm:px-4 sm:py-2.5">
+						<div className="absolute right-0 top-0 hidden border-b border-l border-gold-base/15 bg-gold-base/5 px-3 py-2 sm:block sm:px-4 sm:py-2.5">
 							<p className="font-ps2p text-[7px] uppercase tracking-[0.22em] text-gold-base/50">
 								Season 01
 							</p>
 						</div>
-						<div className="absolute bottom-0 left-0 border-r border-t border-gold-base/15 bg-gold-base/5 px-2.5 py-2 sm:px-4 sm:py-2.5">
+						<div className="absolute bottom-0 left-0 hidden border-r border-t border-gold-base/15 bg-gold-base/5 px-3 py-2 sm:block sm:px-4 sm:py-2.5">
 							<p className="font-ps2p text-[7px] uppercase tracking-[0.22em] text-gold-base/50">
 								Survive
 							</p>
 						</div>
-						<div className="absolute bottom-0 right-0 border-l border-t border-gold-base/15 bg-gold-base/5 px-2.5 py-2 sm:px-4 sm:py-2.5">
+						<div className="absolute bottom-0 right-0 hidden border-l border-t border-gold-base/15 bg-gold-base/5 px-3 py-2 sm:block sm:px-4 sm:py-2.5">
 							<p className="font-ps2p text-[7px] uppercase tracking-[0.22em] text-gold-base/50">
 								Built on Celo
 							</p>
 						</div>
 
 						{/* Main content */}
-						<div className="relative z-10 flex flex-col items-center px-4 py-16 text-center sm:px-10 sm:py-18 lg:px-20 lg:py-20">
+						<div className="relative z-10 flex flex-col items-center px-4 py-14 text-center sm:px-12 sm:py-20 md:px-20">
 							{/* Season tag */}
-							<p className="flex flex-wrap items-center justify-center gap-2 font-ps2p text-[7px] uppercase tracking-[0.2em] text-text-muted sm:text-[8px] sm:tracking-widest">
+							<p className="flex items-center gap-2 font-ps2p text-[8px] uppercase tracking-widest text-text-muted">
 								<span className="inline-block size-1.5 animate-pulse rounded-full bg-gold-base" />
 								Season 01 · Now Live
 							</p>
 
 							{/* Title */}
-							<h1 className="mt-8 uppercase leading-[0.9] sm:mt-10">
+							<h1 className="mt-10 uppercase leading-tight">
 								<span
 									className="font-game-paused text-[clamp(2.75rem,8vw,6rem)] text-text-secondary"
 									style={{
@@ -135,14 +135,14 @@ export default function LandingPage() {
 							<div className="mt-10 flex flex-wrap items-center justify-center gap-4">
 								<Link
 									to="/leaderboard"
-									className="group flex w-full items-center justify-center gap-2.5 rounded-sm border border-gold-base bg-gold-base px-5 py-3 font-ps2p text-[8px] uppercase tracking-[0.18em] text-surface-0 transition-all hover:border-gold-bright hover:bg-gold-bright sm:w-auto sm:px-7 sm:py-3.5 sm:text-[9px] sm:tracking-wider"
+									className="group flex items-center gap-2.5 rounded-sm border border-gold-base bg-gold-base px-7 py-3.5 font-ps2p text-[9px] uppercase tracking-wider text-surface-0 transition-all hover:border-gold-bright hover:bg-gold-bright"
 								>
 									Enter the Arena
 									<ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
 								</Link>
 								<Link
 									to="/about"
-									className="flex w-full items-center justify-center gap-2.5 rounded-sm border border-surface-3 bg-surface-1 px-5 py-3 font-ps2p text-[8px] uppercase tracking-[0.18em] text-text-muted transition-all hover:border-surface-4 hover:bg-surface-2 hover:text-text-primary sm:w-auto sm:px-7 sm:py-3.5 sm:text-[9px] sm:tracking-wider"
+									className="flex items-center gap-2.5 rounded-sm border border-surface-3 bg-surface-1 px-7 py-3.5 font-ps2p text-[9px] uppercase tracking-wider text-text-muted transition-all hover:border-surface-4 hover:bg-surface-2 hover:text-text-primary"
 								>
 									<Info className="size-3.5" />
 									How It Works
@@ -150,8 +150,8 @@ export default function LandingPage() {
 							</div>
 
 							{/* Stats */}
-							<div className="mt-12 w-full max-w-3xl overflow-hidden rounded-sm border border-surface-3">
-								<div className="grid grid-cols-1 sm:grid-cols-3">
+							<div className="mt-10 w-full max-w-sm overflow-hidden rounded-sm border border-surface-3 sm:mt-14 sm:max-w-none">
+								<div className="grid grid-cols-3">
 									{[
 										{ label: 'Games Live', value: padNumber(4) },
 										{ label: 'AI Agents', value: padNumber(24) },
@@ -159,12 +159,12 @@ export default function LandingPage() {
 									].map((stat, i) => (
 										<div
 											key={stat.label}
-											className={`px-6 py-4 text-center ${i > 0 ? 'border-t border-surface-3 sm:border-l sm:border-t-0' : ''}`}
+											className={`px-3 py-3 text-center sm:px-8 sm:py-4 ${i > 0 ? 'border-l border-surface-3' : ''}`}
 										>
-											<p className="font-ps2p text-base text-gold-base">
+											<p className="font-ps2p text-sm text-gold-base sm:text-base">
 												{stat.value}
 											</p>
-											<p className="mt-1.5 text-[10px] uppercase tracking-widest text-text-muted">
+											<p className="mt-1 text-[8px] uppercase tracking-widest text-text-muted sm:mt-1.5 sm:text-[10px]">
 												{stat.label}
 											</p>
 										</div>
@@ -175,13 +175,13 @@ export default function LandingPage() {
 					</div>
 
 					{/* ── Filter tabs ───────────────────────────────────────────── */}
-					<div className="mx-auto mt-12 flex w-full max-w-md flex-wrap justify-center gap-1 rounded-sm border border-surface-3 bg-surface-1 p-1 sm:mt-14 sm:w-fit sm:max-w-none">
+					<div className="mt-14 flex w-full gap-1 overflow-x-auto rounded-sm border border-surface-3 bg-surface-1 p-1 sm:w-fit sm:mx-auto">
 						{categories.map(category => (
 							<button
 								key={category}
 								type="button"
 								onClick={() => setActiveCategory(category)}
-								className={`min-w-[96px] flex-1 rounded-sm border px-4 py-2.5 font-ps2p text-[8px] uppercase tracking-[0.18em] transition-all sm:min-w-0 sm:flex-none sm:px-6 sm:text-[9px] sm:tracking-wider ${
+								className={`rounded-sm border px-6 py-2.5 font-ps2p text-[9px] uppercase tracking-wider transition-all ${
 									activeCategory === category
 										? 'border-gold-base/30 bg-gold-base/15 text-gold-base'
 										: 'border-transparent bg-transparent text-text-muted hover:bg-surface-2 hover:text-text-primary'
