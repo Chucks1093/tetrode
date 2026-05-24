@@ -8,6 +8,14 @@ export class PaymentRequiredError extends Error {
 	}
 }
 
+export class ActiveRoomExistsError extends Error {
+	readonly roomId: string;
+	constructor(roomId: string) {
+		super('Active room exists');
+		this.roomId = roomId;
+	}
+}
+
 export interface UsdcAuthorization {
 	from: string;
 	to: string;
@@ -68,13 +76,28 @@ class RoomService extends BaseApiService {
 			const response = await this.api.post<APIResponse<Room>>('/rooms', input);
 			return response.data.data;
 		} catch (error: unknown) {
-			const axiosError = error as { response?: { status: number; data?: { data?: { entryFee?: string } } } };
+			const axiosError = error as { response?: { status: number; data?: { data?: { entryFee?: string; roomId?: string } } } };
 			if (axiosError?.response?.status === 402) {
 				const entryFee = axiosError.response.data?.data?.entryFee ?? '0';
 				throw new PaymentRequiredError(entryFee);
 			}
+			if (axiosError?.response?.status === 409) {
+				const roomId = axiosError.response.data?.data?.roomId ?? '';
+				throw new ActiveRoomExistsError(roomId);
+			}
 
 			throw this.handleError(error);
+		}
+	}
+
+	async getMyActiveRoom(gameId: string, actorId: string): Promise<Room | null> {
+		try {
+			const response = await this.api.get<APIResponse<Room>>('/rooms/my-active', {
+				params: { gameId, actorId },
+			});
+			return response.data.data;
+		} catch {
+			return null;
 		}
 	}
 

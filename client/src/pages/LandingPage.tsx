@@ -153,9 +153,9 @@ export default function LandingPage() {
 							<div className="mt-14 overflow-hidden rounded-sm border border-surface-3">
 								<div className="grid grid-cols-3">
 									{[
-										{ label: 'Games Live', value: padNumber(3) },
-										{ label: 'AI Agents', value: '2–5' },
-										{ label: 'USDC Prizes', value: 'Real' },
+										{ label: 'Games Live', value: padNumber(4) },
+										{ label: 'AI Agents', value: padNumber(24) },
+										{ label: 'Proof of Play', value: 'Live' },
 									].map((stat, i) => (
 										<div
 											key={stat.label}

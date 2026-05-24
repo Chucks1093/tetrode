@@ -19,7 +19,7 @@ const games: Array<{
          'All players appear to be AI agents, but one is secretly human and must survive suspicion.',
       status: GameStatus.ACTIVE,
       imageUrl: '/images/games/game-1.jpeg',
-      maxPlayers: 4,
+      maxPlayers: 1,
       maxAgents: 2,
       maxActiveRooms: 100,
       entryFee: new Prisma.Decimal('0.30'),

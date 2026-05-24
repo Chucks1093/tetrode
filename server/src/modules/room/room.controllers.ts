@@ -37,6 +37,24 @@ export const httpCreateRoom: AsyncController = async (req, res, next) => {
 			});
 		}
 
+		// ── One active room per player ─────────────────────────────────────────
+		const existingRoom = await prisma.room.findFirst({
+			where: {
+				gameId: validated.gameId,
+				status: { not: 'FINISHED' },
+				participants: { some: { actorId: validated.actorId, type: 'HUMAN' } },
+			},
+			select: { publicId: true },
+		});
+		if (existingRoom) {
+			return res.status(HTTP_STATUS.CONFLICT).json({
+				success: false,
+				message: 'You already have an active room. Rejoin it before starting a new one.',
+				data: { roomId: existingRoom.publicId },
+			});
+		}
+		// ── End one active room check ──────────────────────────────────────────
+
 		// ── Entry fee gate ─────────────────────────────────────────────────────
 		const { usdcAuthorization, walletAddress } = validated;
 		const entryFee = game.entryFee.toString();
@@ -132,6 +150,47 @@ export const httpCreateRoom: AsyncController = async (req, res, next) => {
 			}
 			throw error;
 		}
+	} catch (error) {
+		next(error);
+	}
+};
+
+export const httpGetMyActiveRoom: AsyncController = async (req, res, next) => {
+	try {
+		const gameId = typeof req.query.gameId === 'string' ? req.query.gameId : undefined;
+		const actorId = typeof req.query.actorId === 'string' ? req.query.actorId : undefined;
+
+		if (!gameId || !actorId) {
+			return res.status(HTTP_STATUS.BAD_REQUEST).json({
+				success: false,
+				message: 'gameId and actorId are required',
+				data: null,
+			});
+		}
+
+		const room = await prisma.room.findFirst({
+			where: {
+				gameId,
+				status: { not: 'FINISHED' },
+				participants: { some: { actorId, type: 'HUMAN' } },
+			},
+			include: { participants: { orderBy: { joinedAt: 'asc' } } },
+			orderBy: { createdAt: 'desc' },
+		});
+
+		if (!room) {
+			return res.status(HTTP_STATUS.NOT_FOUND).json({
+				success: false,
+				message: 'No active room found',
+				data: null,
+			});
+		}
+
+		return res.status(HTTP_STATUS.OK).json({
+			success: true,
+			message: 'Active room found',
+			data: serializeRoom(room),
+		});
 	} catch (error) {
 		next(error);
 	}

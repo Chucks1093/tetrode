@@ -10,6 +10,7 @@ import { playerService } from '@/services/player.service';
 import {
 	roomService,
 	PaymentRequiredError,
+	ActiveRoomExistsError,
 	type UsdcAuthorization,
 } from '@/services/room.service';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -60,6 +61,7 @@ export default function GameDetails() {
 	const [gameError, setGameError] = useState<string | null>(null);
 	const [isLoadingGame, setIsLoadingGame] = useState(true);
 	const { signTypedData } = useSignTypedData();
+	const [activeRoom, setActiveRoom] = useState<import('@/services/room.service').Room | null>(null);
 	const [isCreatingRoom, setIsCreatingRoom] = useState(false);
 	const [roomError, setRoomError] = useState<string | null>(null);
 	const [joinRoomId, setJoinRoomId] = useState('');
@@ -107,6 +109,15 @@ export default function GameDetails() {
 			isMounted = false;
 		};
 	}, [gameId]);
+
+	useEffect(() => {
+		let isMounted = true;
+		if (!gameId || !player.actorId) return;
+		roomService.getMyActiveRoom(gameId, player.actorId).then(room => {
+			if (isMounted) setActiveRoom(room);
+		});
+		return () => { isMounted = false; };
+	}, [gameId, player.actorId]);
 
 	if (isLoadingGame) {
 		return (
@@ -171,6 +182,8 @@ export default function GameDetails() {
 		} catch (error) {
 			if (error instanceof PaymentRequiredError) {
 				await handlePaymentRequired(error);
+			} else if (error instanceof ActiveRoomExistsError) {
+				navigate(`/games/${game.id}/${error.roomId}`);
 			} else {
 				setRoomError(
 					error instanceof Error ? error.message : 'Failed to create room.'
@@ -388,6 +401,31 @@ export default function GameDetails() {
 					>
 						← Back To Games
 					</Link>
+
+					{activeRoom && (
+						<div className="rounded-sm border border-gold-base/30 bg-gold-base/5 p-5">
+							<div className="flex items-center justify-between gap-4">
+								<div>
+									<p className="font-ps2p text-[9px] uppercase tracking-widest text-gold-base">
+										Active Session
+									</p>
+									<p className="mt-1.5 text-sm text-text-muted">
+										You have a room still running. Jump back in where you left off.
+									</p>
+									<p className="mt-1 font-mono text-xs text-text-muted">
+										Room: {activeRoom.id}
+									</p>
+								</div>
+								<button
+									type="button"
+									onClick={() => navigate(`/games/${game.id}/${activeRoom.id}`)}
+									className="shrink-0 rounded-sm border border-gold-base bg-gold-base px-5 py-2.5 font-ps2p text-[9px] uppercase tracking-wider text-surface-0 transition-all hover:border-gold-bright hover:bg-gold-bright"
+								>
+									Rejoin
+								</button>
+							</div>
+						</div>
+					)}
 
 					<GameDetailsCard
 						game={game}

@@ -6,6 +6,7 @@ import {
    httpJoinRoom,
    httpLeaveRoom,
    httpListRooms,
+   httpGetMyActiveRoom,
    httpCastVote,
    httpGetRoomResults,
 } from './room.controllers';
@@ -14,6 +15,7 @@ const roomRouter = Router();
 
 roomRouter.get('/', httpListRooms);
 roomRouter.post('/', httpCreateRoom);
+roomRouter.get('/my-active', httpGetMyActiveRoom);
 roomRouter.get('/:roomId', httpGetRoomById);
 roomRouter.get('/:roomId/participants', httpGetRoomParticipants);
 roomRouter.get('/:roomId/results', httpGetRoomResults);
