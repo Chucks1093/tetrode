@@ -15,12 +15,12 @@ import {
 } from '@/services/room.service';
 import { useAuthStore } from '@/stores/useAuthStore';
 
-const USDC_CONTRACT = '0x01C5C0122039549AD1493B8220cABEdD739BC44E';
-const CELO_RPC = 'https://forno.celo-sepolia.celo-testnet.org';
+const USDC_CONTRACT = '0xcebA9300f2b948710d2653dD7B07f33A8B32118C';
+const CELO_RPC = 'https://rpc.ankr.com/celo';
 const TREASURY_WALLET = import.meta.env.VITE_TREASURY_WALLET_ADDRESS as
 	| string
 	| undefined;
-const CELO_SEPOLIA_CHAIN_ID = 11142220;
+const CELO_CHAIN_ID = 42220;
 const TELEGRAM_URL = 'https://t.me/tetrodegames';
 
 async function fetchUsdcBalance(walletAddress: string): Promise<number> {
@@ -213,7 +213,7 @@ export default function GameDetails() {
 				domain: {
 					name: 'USDC',
 					version: '2',
-					chainId: CELO_SEPOLIA_CHAIN_ID,
+					chainId: CELO_CHAIN_ID,
 					verifyingContract: USDC_CONTRACT as `0x${string}`,
 				},
 				types: {
@@ -323,7 +323,7 @@ export default function GameDetails() {
 								</p>
 							</div>
 							<p className="mb-3 text-xs leading-relaxed text-text-muted">
-								Share your address to receive USDC on Celo Sepolia.
+								Share your address to receive USDC on Celo.
 							</p>
 							<button
 								type="button"

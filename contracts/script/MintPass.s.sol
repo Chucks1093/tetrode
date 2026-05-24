@@ -5,7 +5,7 @@ import {Script, console2} from "forge-std/Script.sol";
 import {TetrodePass} from "../src/TetrodePass.sol";
 
 contract MintPass is Script {
-    address constant PASS_CONTRACT = 0x36FcDD5D5AB8A213Cf6802f91bB3d3C0411B8e47;
+    address constant PASS_CONTRACT = 0xAD3DadDD4380D5c542DA0F5EfAC3ac168A1cDf00;
 
     function run(address to, uint256 amount) external {
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");

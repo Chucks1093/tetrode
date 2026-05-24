@@ -6,15 +6,14 @@ import { type ReactNode, useCallback } from 'react';
 import { authService } from '@/services/auth.service';
 import { env } from '@/utils/env.utils';
 
-const celoSepolia = {
-	id: 11142220,
-	name: 'Celo Sepolia',
+const celoMainnet = {
+	id: 42220,
+	name: 'Celo',
 	nativeCurrency: { name: 'CELO', symbol: 'CELO', decimals: 18 },
-	rpcUrls: { default: { http: ['https://forno.celo-sepolia.celo-testnet.org'] } },
+	rpcUrls: { default: { http: ['https://rpc.ankr.com/celo'] } },
 	blockExplorers: {
-		default: { name: 'Celoscan', url: 'https://sepolia.celoscan.io' },
+		default: { name: 'Celoscan', url: 'https://celoscan.io' },
 	},
-	testnet: true,
 } as const;
 
 function PrivyJwtBridge({ children }: { children: ReactNode }) {
@@ -49,8 +48,8 @@ export default function PrivyAuthProvider({
 					theme: 'dark',
 					accentColor: '#d4a017',
 				},
-				supportedChains: [celoSepolia],
-				defaultChain: celoSepolia,
+				supportedChains: [celoMainnet],
+				defaultChain: celoMainnet,
 				customAuth: {
 					isLoading: false,
 					getCustomAccessToken: async () => {

@@ -14,8 +14,8 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { leaderboardService } from '@/services/leaderboard.service';
 import { playerService } from '@/services/player.service';
 
-const USDC_CONTRACT = '0x01C5C0122039549AD1493B8220cABEdD739BC44E';
-const CELO_RPC = 'https://forno.celo-sepolia.celo-testnet.org';
+const USDC_CONTRACT = '0xcebA9300f2b948710d2653dD7B07f33A8B32118C';
+const CELO_RPC = 'https://rpc.ankr.com/celo';
 
 async function fetchUsdcBalance(walletAddress: string): Promise<string> {
 	// balanceOf(address) selector

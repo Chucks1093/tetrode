@@ -48,8 +48,9 @@ async function main() {
 	console.log(`Oracle wallet: ${account.address}`);
 	console.log('');
 
-	const walletClient = createWalletClient({ account, chain, transport: http() });
-	const publicClient = createPublicClient({ chain, transport: http() });
+	const rpc = IS_PROD ? 'https://rpc.ankr.com/celo' : 'https://forno.celo-sepolia.celo-testnet.org';
+	const walletClient = createWalletClient({ account, chain, transport: http(rpc) });
+	const publicClient = createPublicClient({ chain, transport: http(rpc) });
 
 	const agents = await prisma.agent.findMany({ orderBy: { name: 'asc' } });
 	const unminted = agents.filter(a => !a.erc8004TokenId);

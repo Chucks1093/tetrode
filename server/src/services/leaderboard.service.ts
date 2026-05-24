@@ -21,13 +21,19 @@ const TETRODE_PASS_ABI = parseAbi([
 
 const WIN_POINTS = BigInt(100);
 
-// Celo Sepolia is not in viem's built-in chain list
 const celoSepolia = defineChain({
 	id: 11142220,
 	name: 'Celo Sepolia',
 	nativeCurrency: { name: 'CELO', symbol: 'CELO', decimals: 18 },
 	rpcUrls: { default: { http: ['https://forno.celo-sepolia.celo-testnet.org'] } },
 });
+
+function getChainAndRpc() {
+	if (envConfig.MODE === 'production') {
+		return { chain: celo, rpc: 'https://rpc.ankr.com/celo' };
+	}
+	return { chain: celoSepolia, rpc: 'https://forno.celo-sepolia.celo-testnet.org' };
+}
 
 function getClients() {
 	const privateKey = envConfig.ORACLE_PRIVATE_KEY;
@@ -36,10 +42,10 @@ function getClients() {
 	if (!privateKey || !contractAddress) return null;
 
 	const account = privateKeyToAccount(privateKey as `0x${string}`);
-	const chain = envConfig.MODE === 'production' ? celo : celoSepolia;
+	const { chain, rpc } = getChainAndRpc();
 
-	const walletClient = createWalletClient({ account, chain, transport: http() });
-	const publicClient = createPublicClient({ chain, transport: http() });
+	const walletClient = createWalletClient({ account, chain, transport: http(rpc) });
+	const publicClient = createPublicClient({ chain, transport: http(rpc) });
 
 	return { walletClient, publicClient, account, contractAddress: contractAddress as `0x${string}` };
 }
@@ -51,10 +57,10 @@ function getPassClients() {
 	if (!privateKey || !contractAddress) return null;
 
 	const account = privateKeyToAccount(privateKey as `0x${string}`);
-	const chain = envConfig.MODE === 'production' ? celo : celoSepolia;
+	const { chain, rpc } = getChainAndRpc();
 
-	const walletClient = createWalletClient({ account, chain, transport: http() });
-	const publicClient = createPublicClient({ chain, transport: http() });
+	const walletClient = createWalletClient({ account, chain, transport: http(rpc) });
+	const publicClient = createPublicClient({ chain, transport: http(rpc) });
 
 	return { walletClient, publicClient, account, contractAddress: contractAddress as `0x${string}` };
 }
@@ -162,9 +168,9 @@ export async function relayUsdcTransfer(auth: {
 	if (v < 27) v += 27; // normalize to 27/28
 
 	const account = privateKeyToAccount(privateKey as `0x${string}`);
-	const chain = envConfig.MODE === 'production' ? celo : celoSepolia;
-	const walletClient = createWalletClient({ account, chain, transport: http() });
-	const publicClient = createPublicClient({ chain, transport: http() });
+	const { chain, rpc } = getChainAndRpc();
+	const walletClient = createWalletClient({ account, chain, transport: http(rpc) });
+	const publicClient = createPublicClient({ chain, transport: http(rpc) });
 
 	try {
 		const hash = await walletClient.writeContract({
@@ -205,10 +211,8 @@ export async function verifyUsdcPayment(
 	if (!treasuryWallet || !usdcContract) return false;
 
 	try {
-		const publicClient = createPublicClient({
-			chain: envConfig.MODE === 'production' ? celo : celoSepolia,
-			transport: http(),
-		});
+		const { chain, rpc } = getChainAndRpc();
+		const publicClient = createPublicClient({ chain, transport: http(rpc) });
 
 		const receipt = await publicClient.getTransactionReceipt({ hash: txHash as `0x${string}` });
 		if (!receipt || receipt.status !== 'success') return false;
