@@ -193,44 +193,44 @@ export default function LeaderboardPage() {
 
 					{/* ── Tabs + Rankings (blurred — coming soon) ───────── */}
 					<div className="relative">
+						{/* 7 placeholder rows — blurred. To open: remove this whole relative block and restore the real tabs+rankings below */}
 						<div className="pointer-events-none select-none blur-sm">
 							<div className="flex w-fit gap-1 rounded-sm border border-surface-3 bg-surface-1 p-1">
 								{tabs.map(tab => (
-									<button
-										key={tab.value}
-										type="button"
-										className={`rounded-sm border px-6 py-2.5 font-ps2p text-[9px] uppercase tracking-wider ${
-											tab.value === 'ALL'
-												? 'border-gold-base/30 bg-gold-base/15 text-gold-base'
-												: 'border-transparent bg-transparent text-text-muted'
-										}`}
-									>
+									<button key={tab.value} type="button" onClick={() => setActiveTab(tab.value)}
+										className={`rounded-sm border px-6 py-2.5 font-ps2p text-[9px] uppercase tracking-wider ${activeTab === tab.value ? 'border-gold-base/30 bg-gold-base/15 text-gold-base' : 'border-transparent text-text-muted'}`}>
 										{tab.label}
 									</button>
 								))}
 							</div>
-
 							<div className="mt-6 overflow-hidden rounded-sm border border-surface-3">
-								<div className="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-4 border-b border-surface-3 bg-surface-1 px-5 py-3 text-[9px] uppercase tracking-widest text-text-muted font-ps2p">
-									<span>#</span>
-									<span>Player</span>
+								<div className="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-4 border-b border-surface-3 bg-surface-1 px-5 py-3 font-ps2p text-[9px] uppercase tracking-widest text-text-muted">
+									<span>#</span><span>Player</span>
 									<span className="text-right">W/P</span>
 									<span className="text-right">Games</span>
 									<span className="text-right">Points</span>
 								</div>
-								{Array.from({ length: 6 }).map((_, i) => (
+								{Array.from({ length: 7 }).map((_, i) => (
 									<div key={i} className="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-4 border-b border-surface-3 px-5 py-4 last:border-0">
 										<div className="h-4 w-6 rounded bg-surface-3" />
-										<div className="h-4 w-32 rounded bg-surface-3" />
+										<div className="h-4 w-28 rounded bg-surface-3" />
 										<div className="h-4 w-10 rounded bg-surface-3" />
 										<div className="h-4 w-8 rounded bg-surface-3" />
 										<div className="h-4 w-12 rounded bg-surface-3" />
 									</div>
 								))}
 							</div>
+							{/* refs kept for when leaderboard is opened */}
+							<div className="hidden">
+								{isLoading && null}
+								{entries.map(e => <RankNumber key={e.rank} rank={e.rank} />)}
+								{entries.map(e => <TypeBadge key={e.rank} type={e.type} />)}
+								{player.displayName}
+								{hasMore && <button type="button" onClick={() => void loadMore()} />}
+							</div>
 						</div>
 
-						{/* Coming soon badge */}
+						{/* Coming soon overlay */}
 						<div className="absolute inset-0 flex items-center justify-center">
 							<div className="flex flex-col items-center gap-3 rounded-sm border border-surface-3 bg-black/80 px-10 py-7 backdrop-blur-sm">
 								<Dice5 className="size-8 text-gold-base" strokeWidth={1.5} />
