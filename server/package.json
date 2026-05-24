@@ -25,6 +25,7 @@
       "games:seed": "ts-node src/scripts/seed-games.ts",
       "agents:seed": "ts-node src/scripts/seed-agents.ts",
       "agents:mint": "ts-node src/scripts/mint-agents-erc8004.ts",
+      "agents:update-uris": "ts-node src/scripts/update-agent-uris.ts",
       "studio": "pnpm exec prisma studio",
       "validate-api": "tspec validate",
       "seed:reports": "ts-node src/scripts/seed-reports.ts",

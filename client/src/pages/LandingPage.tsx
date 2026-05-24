@@ -150,7 +150,7 @@ export default function LandingPage() {
 							</div>
 
 							{/* Stats */}
-							<div className="mt-10 w-full max-w-sm overflow-hidden rounded-sm border border-surface-3 sm:mt-14 sm:max-w-none">
+							<div className="mt-10 w-full max-w-sm overflow-hidden rounded-sm border border-gold-base/15 bg-black/90 sm:mt-14 sm:max-w-none">
 								<div className="grid grid-cols-3">
 									{[
 										{ label: 'Games Live', value: padNumber(4) },
@@ -159,7 +159,7 @@ export default function LandingPage() {
 									].map((stat, i) => (
 										<div
 											key={stat.label}
-											className={`px-3 py-3 text-center sm:px-8 sm:py-4 ${i > 0 ? 'border-l border-surface-3' : ''}`}
+											className={`px-3 py-3 text-center sm:px-8 sm:py-4 ${i > 0 ? 'border-l border-gold-base/15' : ''}`}
 										>
 											<p className="font-ps2p text-sm text-gold-base sm:text-base">
 												{stat.value}
