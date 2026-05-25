@@ -6,7 +6,7 @@ const router = Router();
 router.get('/:name/identity', async (req, res, next) => {
 	try {
 		const name = req.params.name.charAt(0).toUpperCase() + req.params.name.slice(1);
-		const agent = await prisma.agent.findUnique({ where: { name } });
+		const agent = await prisma.agent.findUnique({ where: { name }, select: { name: true, walletAddress: true, erc8004TokenId: true } });
 
 		if (!agent) {
 			return res.status(404).json({ error: 'Agent not found' });
@@ -25,12 +25,23 @@ router.get('/:name/identity', async (req, res, next) => {
 			category: 'gaming,social,ai,blockchain',
 			tags: ['social-deduction', 'hidden-human', 'game-agent', 'celo', 'tetrode'],
 			mcpPrompts: ['cast_vote', 'send_message'],
+			capabilities: {
+				streaming: true,
+				pushNotifications: false,
+			},
 			services: [
+				{ name: 'web', endpoint: 'https://tetrode.xyz' },
+				{ name: 'api', endpoint: 'https://api.tetrode.xyz' },
 				...(agent.walletAddress
 					? [{ name: 'wallet', endpoint: agent.walletAddress, chainId: 42220 }]
 					: []),
-				{ name: 'platform', endpoint: 'https://tetrode.xyz', chainId: 42220 },
 			],
+			...(agent.erc8004TokenId ? {
+				registrations: [{
+					agentId: Number(agent.erc8004TokenId),
+					agentRegistry: 'eip155:42220:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432',
+				}],
+			} : {}),
 			active: true,
 			supportedTrust: ['reputation'],
 		});
