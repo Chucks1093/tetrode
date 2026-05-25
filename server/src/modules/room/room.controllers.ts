@@ -140,14 +140,14 @@ export const httpCreateRoom: AsyncController = async (req, res, next) => {
 				data: serializeRoom(room),
 			});
 
-			// Record the game on-chain for human and all agents
-			if (validated.walletAddress) {
-				void recordGame(validated.walletAddress);
-			}
-			for (const agentName of agentNames) {
-				const agentWallet = agentWalletByName.get(agentName);
-				if (agentWallet) void recordGame(agentWallet);
-			}
+			// Record the game on-chain for human and all agents (sequential to avoid nonce collisions)
+			void (async () => {
+				if (validated.walletAddress) await recordGame(validated.walletAddress);
+				for (const agentName of agentNames) {
+					const agentWallet = agentWalletByName.get(agentName);
+					if (agentWallet) await recordGame(agentWallet);
+				}
+			})();
 
 			getGameHandler(game.publicId)?.onRoomStart(room.publicId, room.id, room.participants);
 

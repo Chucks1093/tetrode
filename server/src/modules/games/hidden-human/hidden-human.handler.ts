@@ -163,14 +163,6 @@ async function endGame(roomPublicId: string, roomId: string) {
          const humanParticipant = state.allParticipants.find(
             p => p.type === ParticipantType.HUMAN
          );
-         if (humanParticipant?.walletAddress && humanWon) {
-            void recordWin(humanParticipant.walletAddress);
-         }
-
-         // Update leaderboard entries for all participants
-         const WIN_POINTS = 100;
-         const LOSS_POINTS = 10;
-
          // Pre-fetch AI agent publicIds and wallet addresses keyed by displayName
          const aiNames = state.allParticipants
             .filter(p => p.type === ParticipantType.AI)
@@ -180,12 +172,21 @@ async function endGame(roomPublicId: string, roomId: string) {
             : [];
          const agentPublicIdByName = new Map(agentRecords.map(a => [a.name, a.publicId]));
 
-         // Record on-chain win for all agents when agents win
-         if (!humanWon) {
-            for (const agent of agentRecords) {
-               if (agent.walletAddress) void recordWin(agent.walletAddress);
+         // Record on-chain wins sequentially to avoid nonce collisions
+         void (async () => {
+            if (humanParticipant?.walletAddress && humanWon) {
+               await recordWin(humanParticipant.walletAddress);
             }
-         }
+            if (!humanWon) {
+               for (const agent of agentRecords) {
+                  if (agent.walletAddress) await recordWin(agent.walletAddress);
+               }
+            }
+         })();
+
+         // Update leaderboard entries for all participants
+         const WIN_POINTS = 100;
+         const LOSS_POINTS = 10;
 
          await Promise.allSettled(
             state.allParticipants.map(p => {
