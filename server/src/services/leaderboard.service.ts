@@ -35,23 +35,31 @@ function getChainAndRpc() {
 	return { chain: celoSepolia, rpc: 'https://forno.celo-sepolia.celo-testnet.org' };
 }
 
-// Single shared oracle wallet client — all txs go through one instance so viem tracks nonces correctly
-let _oracle: {
-	walletClient: ReturnType<typeof createWalletClient>;
-	publicClient: ReturnType<typeof createPublicClient>;
-} | null = null;
-
-function getOracle() {
-	if (_oracle) return _oracle;
+function createOracleInstance() {
 	const privateKey = envConfig.ORACLE_PRIVATE_KEY;
 	if (!privateKey) return null;
 	const account = privateKeyToAccount(privateKey as `0x${string}`);
 	const { chain, rpc } = getChainAndRpc();
-	_oracle = {
+	return {
 		walletClient: createWalletClient({ account, chain, transport: http(rpc) }),
 		publicClient: createPublicClient({ chain, transport: http(rpc) }),
 	};
+}
+
+// Lazy singleton — one walletClient so viem tracks nonces across all oracle calls
+let _oracle: ReturnType<typeof createOracleInstance> = null;
+
+function getOracle() {
+	if (!_oracle) _oracle = createOracleInstance();
 	return _oracle;
+}
+
+// Global queue — serializes every oracle write so concurrent games never collide on nonces
+let _oracleQueue: Promise<unknown> = Promise.resolve();
+function enqueueOracleTx<T>(fn: () => Promise<T>): Promise<T> {
+	const p = _oracleQueue.then(() => fn());
+	_oracleQueue = p.catch(() => {}); // swallow so queue stays alive after errors
+	return p;
 }
 
 function getClients() {
@@ -76,13 +84,15 @@ export async function recordGame(playerWalletAddress: string): Promise<void> {
 	const { walletClient, publicClient, contractAddress } = clients;
 
 	try {
-		const hash = await walletClient.writeContract({
-			address: contractAddress,
-			abi: LEADERBOARD_ABI,
-			functionName: 'recordGame',
-			args: [playerWalletAddress as `0x${string}`],
+		await enqueueOracleTx(async () => {
+			const hash = await walletClient.writeContract({
+				address: contractAddress,
+				abi: LEADERBOARD_ABI,
+				functionName: 'recordGame',
+				args: [playerWalletAddress as `0x${string}`],
+			});
+			await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
 		});
-		await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
 	} catch (error) {
 		console.error('[leaderboard] recordGame failed:', error);
 	}
@@ -96,13 +106,15 @@ export async function recordWin(playerWalletAddress: string): Promise<void> {
 	const { walletClient, publicClient, contractAddress } = clients;
 
 	try {
-		const hash = await walletClient.writeContract({
-			address: contractAddress,
-			abi: LEADERBOARD_ABI,
-			functionName: 'recordWin',
-			args: [playerWalletAddress as `0x${string}`, WIN_POINTS],
+		await enqueueOracleTx(async () => {
+			const hash = await walletClient.writeContract({
+				address: contractAddress,
+				abi: LEADERBOARD_ABI,
+				functionName: 'recordWin',
+				args: [playerWalletAddress as `0x${string}`, WIN_POINTS],
+			});
+			await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
 		});
-		await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
 	} catch (error) {
 		console.error('[leaderboard] recordWin failed:', error);
 	}
@@ -137,12 +149,12 @@ export async function useFreePass(walletAddress: string): Promise<boolean> {
 	const { walletClient, contractAddress } = clients;
 
 	try {
-		await walletClient.writeContract({
+		await enqueueOracleTx(() => walletClient.writeContract({
 			address: contractAddress,
 			abi: TETRODE_PASS_ABI,
 			functionName: 'adminBurn',
 			args: [walletAddress as `0x${string}`, BigInt(1)],
-		});
+		}));
 		return true;
 	} catch (error) {
 		console.error('[tetrodepass] useFreePass failed:', error);
@@ -158,12 +170,12 @@ export async function mintFreePass(walletAddress: string): Promise<void> {
 	const { walletClient, contractAddress } = clients;
 
 	try {
-		await walletClient.writeContract({
+		await enqueueOracleTx(() => walletClient.writeContract({
 			address: contractAddress,
 			abi: TETRODE_PASS_ABI,
 			functionName: 'mint',
 			args: [walletAddress as `0x${string}`, BigInt(1)],
-		});
+		}));
 		console.log(`[tetrodepass] minted 1 pass to ${walletAddress}`);
 	} catch (error) {
 		console.error('[tetrodepass] mintFreePass failed:', error);
