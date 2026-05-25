@@ -95,6 +95,12 @@ export const httpCreateRoom: AsyncController = async (req, res, next) => {
 		try {
 			const agentNames = pickAgentNames(game.maxAgents);
 
+			const agentDbRecords = await prisma.agent.findMany({
+				where: { name: { in: agentNames } },
+				select: { name: true, walletAddress: true },
+			});
+			const agentWalletByName = new Map(agentDbRecords.map(a => [a.name, a.walletAddress]));
+
 			for (let index = 0; index < game.maxAgents; index += 1) {
 				const agent = await agentService.createAgent({
 					title: `${game.title} — ${agentNames[index]}`,
@@ -134,9 +140,13 @@ export const httpCreateRoom: AsyncController = async (req, res, next) => {
 				data: serializeRoom(room),
 			});
 
-			// Record the game on-chain at start so it's counted even if player leaves early
+			// Record the game on-chain for human and all agents
 			if (validated.walletAddress) {
 				void recordGame(validated.walletAddress);
+			}
+			for (const agentName of agentNames) {
+				const agentWallet = agentWalletByName.get(agentName);
+				if (agentWallet) void recordGame(agentWallet);
 			}
 
 			getGameHandler(game.publicId)?.onRoomStart(room.publicId, room.id, room.participants);

@@ -1,3 +1,4 @@
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { prisma } from '../utils/prisma.utils';
 
 const AGENT_NAMES = [
@@ -8,13 +9,19 @@ const AGENT_NAMES = [
 
 async function main() {
 	for (const name of AGENT_NAMES) {
+		const existing = await prisma.agent.findUnique({ where: { name }, select: { walletAddress: true } });
+
+		const walletAddress = existing?.walletAddress
+			? existing.walletAddress
+			: privateKeyToAccount(generatePrivateKey()).address;
+
 		await prisma.agent.upsert({
 			where: { name },
-			update: {},
-			create: { name },
+			update: { walletAddress },
+			create: { name, walletAddress },
 		});
 	}
-	console.log(`Seeded ${AGENT_NAMES.length} game agents.`);
+	console.log(`Seeded ${AGENT_NAMES.length} game agents with wallet addresses.`);
 }
 
 main()

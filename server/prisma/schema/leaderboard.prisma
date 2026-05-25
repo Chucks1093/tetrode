@@ -3,6 +3,7 @@ model Agent {
   id             String   @id @default(cuid())
   publicId       String   @unique @default(uuid())
   name           String   @unique
+  walletAddress  String?  @unique
   erc8004TokenId String?
   createdAt      DateTime @default(now())
 }

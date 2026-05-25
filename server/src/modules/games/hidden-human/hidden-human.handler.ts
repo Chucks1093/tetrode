@@ -171,14 +171,21 @@ async function endGame(roomPublicId: string, roomId: string) {
          const WIN_POINTS = 100;
          const LOSS_POINTS = 10;
 
-         // Pre-fetch AI agent publicIds keyed by displayName
+         // Pre-fetch AI agent publicIds and wallet addresses keyed by displayName
          const aiNames = state.allParticipants
             .filter(p => p.type === ParticipantType.AI)
             .map(p => p.displayName);
          const agentRecords = aiNames.length
-            ? await prisma.agent.findMany({ where: { name: { in: aiNames } }, select: { name: true, publicId: true } })
+            ? await prisma.agent.findMany({ where: { name: { in: aiNames } }, select: { name: true, publicId: true, walletAddress: true } })
             : [];
          const agentPublicIdByName = new Map(agentRecords.map(a => [a.name, a.publicId]));
+
+         // Record on-chain win for all agents when agents win
+         if (!humanWon) {
+            for (const agent of agentRecords) {
+               if (agent.walletAddress) void recordWin(agent.walletAddress);
+            }
+         }
 
          await Promise.allSettled(
             state.allParticipants.map(p => {
