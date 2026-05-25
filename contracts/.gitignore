@@ -10,3 +10,10 @@ lib/
 
 # Broadcast (contains sensitive tx data)
 broadcast/*/31337/
+
+# Makefile may contain private keys
+Makefile
+
+script
+
+broadcast
