@@ -11,7 +11,10 @@ import {
 	DialogDescription,
 } from '@/components/ui/dialog';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { leaderboardService, getFreePassBalance } from '@/services/leaderboard.service';
+import {
+	leaderboardService,
+	getFreePassBalance,
+} from '@/services/leaderboard.service';
 import { playerService } from '@/services/player.service';
 
 const USDC_CONTRACT = '0xcebA9300f2b948710d2653dD7B07f33A8B32118C';
@@ -20,7 +23,10 @@ const CELO_RPC = 'https://rpc.ankr.com/celo';
 async function fetchUsdcBalance(walletAddress: string): Promise<string> {
 	// balanceOf(address) selector
 	const selector = '0x70a08231';
-	const paddedAddr = walletAddress.toLowerCase().replace('0x', '').padStart(64, '0');
+	const paddedAddr = walletAddress
+		.toLowerCase()
+		.replace('0x', '')
+		.padStart(64, '0');
 	const data = selector + paddedAddr;
 
 	const res = await fetch(CELO_RPC, {
@@ -33,12 +39,15 @@ async function fetchUsdcBalance(walletAddress: string): Promise<string> {
 			params: [{ to: USDC_CONTRACT, data }, 'latest'],
 		}),
 	});
-	const json = await res.json() as { result?: string };
+	const json = (await res.json()) as { result?: string };
 	if (!json.result || json.result === '0x') return '0.00';
 	const raw = BigInt(json.result);
 	// USDC has 6 decimals
 	const whole = raw / BigInt(1_000_000);
-	const frac = (raw % BigInt(1_000_000)).toString().padStart(6, '0').slice(0, 2);
+	const frac = (raw % BigInt(1_000_000))
+		.toString()
+		.padStart(6, '0')
+		.slice(0, 2);
 	return `${whole}.${frac}`;
 }
 
@@ -65,7 +74,10 @@ function StatCard({ label, value }: StatCardProps) {
 	);
 }
 
-export default function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
+export default function ProfileModal({
+	open,
+	onOpenChange,
+}: ProfileModalProps) {
 	const user = useAuthStore(state => state.user);
 	const [copied, setCopied] = useState(false);
 	const { exportWallet } = useExportWallet();
@@ -77,16 +89,23 @@ export default function ProfileModal({ open, onOpenChange }: ProfileModalProps) 
 	useEffect(() => {
 		if (!open) return;
 		const actorId = playerService.getIdentity().actorId;
-		leaderboardService.getMyStats(actorId).then(stats => {
-			setPoints(stats.points);
-			setGamesPlayed(stats.gamesPlayed);
-		}).catch(() => {});
+		leaderboardService
+			.getMyStats(actorId)
+			.then(stats => {
+				setPoints(stats.points);
+				setGamesPlayed(stats.gamesPlayed);
+			})
+			.catch(() => {});
 	}, [open]);
 
 	useEffect(() => {
 		if (!open || !user?.walletAddress) return;
-		fetchUsdcBalance(user.walletAddress).then(setCusdBalance).catch(() => {});
-		getFreePassBalance(user.walletAddress).then(setPassBalance).catch(() => {});
+		fetchUsdcBalance(user.walletAddress)
+			.then(setCusdBalance)
+			.catch(() => {});
+		getFreePassBalance(user.walletAddress)
+			.then(setPassBalance)
+			.catch(() => {});
 	}, [open, user?.walletAddress]);
 
 	if (!user) return null;
@@ -143,8 +162,14 @@ export default function ProfileModal({ open, onOpenChange }: ProfileModalProps) 
 					{/* Stats */}
 					<div className="mt-6 grid w-full grid-cols-3 gap-2">
 						<StatCard label="USDC" value={cusdBalance ?? '—'} />
-						<StatCard label="Points" value={points !== null ? points.toString() : '—'} />
-						<StatCard label="Games" value={gamesPlayed !== null ? gamesPlayed.toString() : '—'} />
+						<StatCard
+							label="Points"
+							value={points !== null ? points.toString() : '—'}
+						/>
+						<StatCard
+							label="Games"
+							value={gamesPlayed !== null ? gamesPlayed.toString() : '—'}
+						/>
 					</div>
 
 					{/* Wallet */}
@@ -163,15 +188,19 @@ export default function ProfileModal({ open, onOpenChange }: ProfileModalProps) 
 									className="shrink-0 text-text-muted transition-colors hover:text-text-primary"
 									aria-label="Copy wallet address"
 								>
-									{copied
-										? <Check className="size-3.5 text-success" />
-										: <Copy className="size-3.5" />}
+									{copied ? (
+										<Check className="size-3.5 text-success" />
+									) : (
+										<Copy className="size-3.5" />
+									)}
 								</button>
 							</div>
 
 							<button
 								type="button"
-								onClick={() => void exportWallet({ address: user.walletAddress! })}
+								onClick={() =>
+									void exportWallet({ address: user.walletAddress! })
+								}
 								className="flex w-full items-center justify-center gap-2 rounded-md border border-surface-3 bg-transparent py-2.5 text-[11px] text-text-muted transition-colors hover:bg-surface-2 hover:text-text-primary"
 							>
 								<KeyRound className="size-3.5" />
@@ -183,11 +212,16 @@ export default function ProfileModal({ open, onOpenChange }: ProfileModalProps) 
 
 				<div className="border-t border-surface-3 bg-surface-2 px-6 py-3.5 text-center">
 					<p className="font-ps2p text-[7px] uppercase tracking-widest text-text-muted">
-						Member since {new Date(user.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+						Member since{' '}
+						{new Date(user.createdAt).toLocaleDateString(undefined, {
+							month: 'short',
+							year: 'numeric',
+						})}
 					</p>
 					{passBalance !== null && passBalance > 0 && (
 						<p className="mt-1.5 font-ps2p text-[7px] uppercase tracking-widest text-gold-base">
-							{passBalance} free {passBalance === 1 ? 'pass' : 'passes'} available
+							{passBalance} free {passBalance === 1 ? 'pass' : 'passes'}{' '}
+							available
 						</p>
 					)}
 				</div>
