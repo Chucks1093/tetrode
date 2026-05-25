@@ -58,6 +58,7 @@ export const httpCreateRoom: AsyncController = async (req, res, next) => {
 		// ── Entry fee gate ─────────────────────────────────────────────────────
 		const { usdcAuthorization, walletAddress } = validated;
 		const entryFee = game.entryFee.toString();
+		let hasFreePass = false;
 
 		if (usdcAuthorization) {
 			// Player signed a USDC transferWithAuthorization — we relay it (we pay gas)
@@ -70,10 +71,10 @@ export const httpCreateRoom: AsyncController = async (req, res, next) => {
 				});
 			}
 		} else if (walletAddress) {
-			// No USDC payment — check if they have a free pass
+			// No USDC payment — check if they have a free pass (burn happens after room creation)
 			const passBalance = await getFreePassBalance(walletAddress);
 			if (passBalance > 0) {
-				void useFreePass(walletAddress);
+				hasFreePass = true;
 			} else {
 				return res.status(402).json({
 					success: false,
@@ -140,8 +141,9 @@ export const httpCreateRoom: AsyncController = async (req, res, next) => {
 				data: serializeRoom(room),
 			});
 
-			// Record the game on-chain for human and all agents (sequential to avoid nonce collisions)
+			// All oracle txs run sequentially to avoid nonce collisions
 			void (async () => {
+				if (hasFreePass && validated.walletAddress) await useFreePass(validated.walletAddress);
 				if (validated.walletAddress) await recordGame(validated.walletAddress);
 				for (const agentName of agentNames) {
 					const agentWallet = agentWalletByName.get(agentName);

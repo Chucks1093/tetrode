@@ -35,34 +35,37 @@ function getChainAndRpc() {
 	return { chain: celoSepolia, rpc: 'https://forno.celo-sepolia.celo-testnet.org' };
 }
 
-function getClients() {
+// Single shared oracle wallet client — all txs go through one instance so viem tracks nonces correctly
+let _oracle: {
+	walletClient: ReturnType<typeof createWalletClient>;
+	publicClient: ReturnType<typeof createPublicClient>;
+} | null = null;
+
+function getOracle() {
+	if (_oracle) return _oracle;
 	const privateKey = envConfig.ORACLE_PRIVATE_KEY;
-	const contractAddress = envConfig.LEADERBOARD_CONTRACT_ADDRESS;
-
-	if (!privateKey || !contractAddress) return null;
-
+	if (!privateKey) return null;
 	const account = privateKeyToAccount(privateKey as `0x${string}`);
 	const { chain, rpc } = getChainAndRpc();
+	_oracle = {
+		walletClient: createWalletClient({ account, chain, transport: http(rpc) }),
+		publicClient: createPublicClient({ chain, transport: http(rpc) }),
+	};
+	return _oracle;
+}
 
-	const walletClient = createWalletClient({ account, chain, transport: http(rpc) });
-	const publicClient = createPublicClient({ chain, transport: http(rpc) });
-
-	return { walletClient, publicClient, account, contractAddress: contractAddress as `0x${string}` };
+function getClients() {
+	const oracle = getOracle();
+	const contractAddress = envConfig.LEADERBOARD_CONTRACT_ADDRESS;
+	if (!oracle || !contractAddress) return null;
+	return { ...oracle, contractAddress: contractAddress as `0x${string}` };
 }
 
 function getPassClients() {
-	const privateKey = envConfig.ORACLE_PRIVATE_KEY;
+	const oracle = getOracle();
 	const contractAddress = envConfig.TETRODE_PASS_CONTRACT_ADDRESS;
-
-	if (!privateKey || !contractAddress) return null;
-
-	const account = privateKeyToAccount(privateKey as `0x${string}`);
-	const { chain, rpc } = getChainAndRpc();
-
-	const walletClient = createWalletClient({ account, chain, transport: http(rpc) });
-	const publicClient = createPublicClient({ chain, transport: http(rpc) });
-
-	return { walletClient, publicClient, account, contractAddress: contractAddress as `0x${string}` };
+	if (!oracle || !contractAddress) return null;
+	return { ...oracle, contractAddress: contractAddress as `0x${string}` };
 }
 
 // Called at room creation (game start)
@@ -70,15 +73,16 @@ export async function recordGame(playerWalletAddress: string): Promise<void> {
 	const clients = getClients();
 	if (!clients) return;
 
-	const { walletClient, contractAddress } = clients;
+	const { walletClient, publicClient, contractAddress } = clients;
 
 	try {
-		await walletClient.writeContract({
+		const hash = await walletClient.writeContract({
 			address: contractAddress,
 			abi: LEADERBOARD_ABI,
 			functionName: 'recordGame',
 			args: [playerWalletAddress as `0x${string}`],
 		});
+		await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
 	} catch (error) {
 		console.error('[leaderboard] recordGame failed:', error);
 	}
@@ -89,17 +93,17 @@ export async function recordWin(playerWalletAddress: string): Promise<void> {
 	const clients = getClients();
 	if (!clients) return;
 
-	const { walletClient, contractAddress } = clients;
+	const { walletClient, publicClient, contractAddress } = clients;
 
 	try {
-		await walletClient.writeContract({
+		const hash = await walletClient.writeContract({
 			address: contractAddress,
 			abi: LEADERBOARD_ABI,
 			functionName: 'recordWin',
 			args: [playerWalletAddress as `0x${string}`, WIN_POINTS],
 		});
+		await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
 	} catch (error) {
-		// Non-fatal — game result stands, leaderboard update can be retried
 		console.error('[leaderboard] recordWin failed:', error);
 	}
 }
