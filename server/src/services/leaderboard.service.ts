@@ -1,5 +1,5 @@
 import { createWalletClient, createPublicClient, http, parseAbi, defineChain } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
+import { privateKeyToAccount, nonceManager } from 'viem/accounts';
 import { celo } from 'viem/chains';
 import { envConfig } from '../config';
 
@@ -20,6 +20,8 @@ const TETRODE_PASS_ABI = parseAbi([
 ]);
 
 const WIN_POINTS = BigInt(100);
+// 2x the Celo minimum (1 gwei) so oracle txs can always replace any stuck predecessor in the sequencer mempool
+const ORACLE_PRIORITY_FEE = BigInt(2_000_000);
 
 const celoSepolia = defineChain({
 	id: 11142220,
@@ -38,7 +40,7 @@ function getChainAndRpc() {
 function createOracleInstance() {
 	const privateKey = envConfig.ORACLE_PRIVATE_KEY;
 	if (!privateKey) return null;
-	const account = privateKeyToAccount(privateKey as `0x${string}`);
+	const account = privateKeyToAccount(privateKey as `0x${string}`, { nonceManager });
 	const { chain, rpc } = getChainAndRpc();
 	return {
 		walletClient: createWalletClient({ account, chain, transport: http(rpc) }),
@@ -90,6 +92,7 @@ export async function recordGame(playerWalletAddress: string): Promise<void> {
 				abi: LEADERBOARD_ABI,
 				functionName: 'recordGame',
 				args: [playerWalletAddress as `0x${string}`],
+				maxPriorityFeePerGas: ORACLE_PRIORITY_FEE,
 			});
 			await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
 		});
@@ -112,6 +115,7 @@ export async function recordWin(playerWalletAddress: string): Promise<void> {
 				abi: LEADERBOARD_ABI,
 				functionName: 'recordWin',
 				args: [playerWalletAddress as `0x${string}`, WIN_POINTS],
+				maxPriorityFeePerGas: ORACLE_PRIORITY_FEE,
 			});
 			await publicClient.waitForTransactionReceipt({ hash, timeout: 30_000 });
 		});
@@ -154,6 +158,7 @@ export async function useFreePass(walletAddress: string): Promise<boolean> {
 			abi: TETRODE_PASS_ABI,
 			functionName: 'adminBurn',
 			args: [walletAddress as `0x${string}`, BigInt(1)],
+			maxPriorityFeePerGas: ORACLE_PRIORITY_FEE,
 		}));
 		return true;
 	} catch (error) {
@@ -175,6 +180,7 @@ export async function mintFreePass(walletAddress: string): Promise<void> {
 			abi: TETRODE_PASS_ABI,
 			functionName: 'mint',
 			args: [walletAddress as `0x${string}`, BigInt(1)],
+			maxPriorityFeePerGas: ORACLE_PRIORITY_FEE,
 		}));
 		console.log(`[tetrodepass] minted 1 pass to ${walletAddress}`);
 	} catch (error) {
