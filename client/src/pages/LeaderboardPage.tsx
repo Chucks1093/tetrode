@@ -32,9 +32,12 @@ function TypeBadge({ type }: { type: LeaderboardEntryType }) {
 }
 
 function RankNumber({ rank }: { rank: number }) {
-	if (rank === 1) return <span className="font-ps2p text-sm text-gold-base">01</span>;
-	if (rank === 2) return <span className="font-ps2p text-sm text-zinc-300">02</span>;
-	if (rank === 3) return <span className="font-ps2p text-sm text-amber-600">03</span>;
+	if (rank === 1)
+		return <span className="font-ps2p text-sm text-gold-base">01</span>;
+	if (rank === 2)
+		return <span className="font-ps2p text-sm text-zinc-300">02</span>;
+	if (rank === 3)
+		return <span className="font-ps2p text-sm text-amber-600">03</span>;
 	return (
 		<span className="font-ps2p text-sm text-text-muted">
 			{String(rank).padStart(2, '0')}
@@ -61,7 +64,10 @@ export default function LeaderboardPage() {
 				const [summaryData, listData] = await Promise.all([
 					leaderboardService.getSummary(),
 					leaderboardService.getLeaderboard({
-						type: activeTab === 'ALL' ? undefined : activeTab as LeaderboardEntryType,
+						type:
+							activeTab === 'ALL'
+								? undefined
+								: (activeTab as LeaderboardEntryType),
 						limit: LIMIT,
 						offset: 0,
 					}),
@@ -79,13 +85,18 @@ export default function LeaderboardPage() {
 		}
 
 		void load();
-		return () => { isMounted = false; };
+		return () => {
+			isMounted = false;
+		};
 	}, [activeTab]);
 
 	async function loadMore() {
 		try {
 			const data = await leaderboardService.getLeaderboard({
-				type: activeTab === 'ALL' ? undefined : activeTab as LeaderboardEntryType,
+				type:
+					activeTab === 'ALL'
+						? undefined
+						: (activeTab as LeaderboardEntryType),
 				limit: LIMIT,
 				offset,
 			});
@@ -100,7 +111,8 @@ export default function LeaderboardPage() {
 	const humanPoints = summary?.humans.totalPoints ?? 0;
 	const aiPoints = summary?.agents.totalPoints ?? 0;
 	const totalPoints = humanPoints + aiPoints;
-	const humanPct = totalPoints > 0 ? Math.round((humanPoints / totalPoints) * 100) : 50;
+	const humanPct =
+		totalPoints > 0 ? Math.round((humanPoints / totalPoints) * 100) : 50;
 	const aiPct = 100 - humanPct;
 	const leading = summary?.leading;
 
@@ -109,7 +121,6 @@ export default function LeaderboardPage() {
 			<Header />
 			<div className="mx-auto max-w-4xl px-4 pb-14 pt-26 sm:px-6 sm:pt-30">
 				<main className="space-y-8">
-
 					{/* ── Back link ─────────────────────────────────────── */}
 					<Link
 						to="/"
@@ -123,7 +134,9 @@ export default function LeaderboardPage() {
 						<p className="font-ps2p text-[8px] uppercase tracking-widest text-text-muted">
 							Season 01
 						</p>
-						<h1 className="mt-2 font-ps2p text-xl text-text-primary">Leaderboard</h1>
+						<h1 className="mt-2 font-ps2p text-xl text-text-primary">
+							Leaderboard
+						</h1>
 						<p className="mt-1.5 text-sm text-text-muted">
 							The war between humans and AI agents — tracked on Celo.
 						</p>
@@ -162,7 +175,7 @@ export default function LeaderboardPage() {
 									<p className="font-ps2p text-lg text-text-primary">
 										{humanPoints.toLocaleString()} pts
 									</p>
-									<p className="text-sm text-text-secondary">
+									<p className="text-sm text-text-secondary hidden">
 										{summary?.humans.playerCount ?? 0} players
 									</p>
 									<p className="text-xs text-text-muted">
@@ -179,7 +192,7 @@ export default function LeaderboardPage() {
 									<p className="font-ps2p text-lg text-text-primary">
 										{aiPoints.toLocaleString()} pts
 									</p>
-									<p className="text-sm text-text-secondary">
+									<p className="text-sm text-text-secondary hidden">
 										{summary?.agents.agentCount ?? 0} agents
 									</p>
 									<p className="text-xs text-text-muted">
@@ -203,21 +216,29 @@ export default function LeaderboardPage() {
 						<div className="pointer-events-none select-none blur-sm">
 							<div className="flex w-fit gap-1 rounded-sm border border-surface-3 bg-surface-1 p-1">
 								{tabs.map(tab => (
-									<button key={tab.value} type="button" onClick={() => setActiveTab(tab.value)}
-										className={`rounded-sm border px-6 py-2.5 font-ps2p text-[9px] uppercase tracking-wider ${activeTab === tab.value ? 'border-gold-base/30 bg-gold-base/15 text-gold-base' : 'border-transparent text-text-muted'}`}>
+									<button
+										key={tab.value}
+										type="button"
+										onClick={() => setActiveTab(tab.value)}
+										className={`rounded-sm border px-6 py-2.5 font-ps2p text-[9px] uppercase tracking-wider ${activeTab === tab.value ? 'border-gold-base/30 bg-gold-base/15 text-gold-base' : 'border-transparent text-text-muted'}`}
+									>
 										{tab.label}
 									</button>
 								))}
 							</div>
 							<div className="mt-6 overflow-hidden rounded-sm border border-surface-3">
 								<div className="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-4 border-b border-surface-3 bg-surface-1 px-5 py-3 font-ps2p text-[9px] uppercase tracking-widest text-text-muted">
-									<span>#</span><span>Player</span>
+									<span>#</span>
+									<span>Player</span>
 									<span className="text-right">W/P</span>
 									<span className="text-right">Games</span>
 									<span className="text-right">Points</span>
 								</div>
 								{Array.from({ length: 7 }).map((_, i) => (
-									<div key={i} className="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-4 border-b border-surface-3 px-5 py-4 last:border-0">
+									<div
+										key={i}
+										className="grid grid-cols-[2rem_1fr_auto_auto_auto] gap-4 border-b border-surface-3 px-5 py-4 last:border-0"
+									>
 										<div className="h-4 w-6 rounded bg-surface-3" />
 										<div className="h-4 w-28 rounded bg-surface-3" />
 										<div className="h-4 w-10 rounded bg-surface-3" />
@@ -229,17 +250,29 @@ export default function LeaderboardPage() {
 							{/* refs kept for when leaderboard is opened */}
 							<div className="hidden">
 								{isLoading && null}
-								{entries.map(e => <RankNumber key={e.rank} rank={e.rank} />)}
-								{entries.map(e => <TypeBadge key={e.rank} type={e.type} />)}
+								{entries.map(e => (
+									<RankNumber key={e.rank} rank={e.rank} />
+								))}
+								{entries.map(e => (
+									<TypeBadge key={e.rank} type={e.type} />
+								))}
 								{player.displayName}
-								{hasMore && <button type="button" onClick={() => void loadMore()} />}
+								{hasMore && (
+									<button
+										type="button"
+										onClick={() => void loadMore()}
+									/>
+								)}
 							</div>
 						</div>
 
 						{/* Coming soon overlay */}
 						<div className="absolute inset-0 flex items-center justify-center">
 							<div className="flex flex-col items-center gap-3 rounded-sm border border-surface-3 bg-black/80 px-10 py-7 backdrop-blur-sm">
-								<Dice5 className="size-8 text-gold-base" strokeWidth={1.5} />
+								<Dice5
+									className="size-8 text-gold-base"
+									strokeWidth={1.5}
+								/>
 								<p className="font-ps2p text-[10px] uppercase tracking-widest text-text-primary">
 									Coming Soon
 								</p>
