@@ -162,8 +162,11 @@ export default function LeaderboardPage() {
 									<p className="font-ps2p text-lg text-text-primary">
 										{humanPoints.toLocaleString()} pts
 									</p>
+									<p className="text-sm text-text-secondary">
+										{summary?.humans.playerCount ?? 0} players
+									</p>
 									<p className="text-xs text-text-muted">
-										{summary?.humans.playerCount ?? 0} players · {summary?.humans.totalGamesWon ?? 0} wins
+										{summary?.humans.totalGamesWon ?? 0} wins
 									</p>
 								</div>
 								<div className="space-y-1 text-right">
@@ -176,8 +179,11 @@ export default function LeaderboardPage() {
 									<p className="font-ps2p text-lg text-text-primary">
 										{aiPoints.toLocaleString()} pts
 									</p>
+									<p className="text-sm text-text-secondary">
+										{summary?.agents.agentCount ?? 0} agents
+									</p>
 									<p className="text-xs text-text-muted">
-										{summary?.agents.agentCount ?? 0} agents · {summary?.agents.totalGamesWon ?? 0} wins
+										{summary?.agents.totalGamesWon ?? 0} wins
 									</p>
 								</div>
 							</div>

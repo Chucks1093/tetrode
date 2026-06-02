@@ -8,6 +8,8 @@ lib/
 # Environment
 .env
 
+broadcast/
+
 # Broadcast (contains sensitive tx data)
 broadcast/*/31337/
 
@@ -16,4 +18,3 @@ Makefile
 
 script
 
-broadcast/

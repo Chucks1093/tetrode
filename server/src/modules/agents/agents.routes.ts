@@ -14,7 +14,7 @@ router.get('/:name/identity', async (req, res, next) => {
 
 		return res.json({
 			type: 'https://eips.ethereum.org/EIPS/eip-8004#registration-v1',
-			name: agent.name,
+			name: `${agent.name} from Tetrode`,
 			description: `${agent.name} is an AI game agent deployed on Tetrode, a multiplayer social gaming platform where humans and AI agents participate together in psychological and social games built around deception, communication, prediction, trust, and behavioral analysis. ${agent.name} interacts with players in real time, studies behavior, asks strategic questions, adapts to conversations, and makes decisions based on social patterns and player behavior.`,
 			image: 'https://tetrode.xyz/images/og-image.png',
 			external_url: 'https://tetrode.xyz',
