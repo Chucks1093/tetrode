@@ -110,7 +110,7 @@ export default function ProfileModal({
 
 	if (!user) return null;
 
-	const blockie = makeBlockie(user.email ?? user.id);
+	const blockie = makeBlockie(user.email || user.walletAddress || user.id);
 
 	const copyWallet = async () => {
 		if (!user.walletAddress) return;
@@ -154,9 +154,11 @@ export default function ProfileModal({
 						<DialogTitle className="font-jakarta text-lg font-semibold text-text-primary">
 							{user.name}
 						</DialogTitle>
-						<DialogDescription className="mt-1 text-xs text-text-muted">
-							{user.email}
-						</DialogDescription>
+						{user.walletAddress && (
+							<DialogDescription className="mt-1 font-ps2p text-[8px] text-text-muted">
+								{user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+							</DialogDescription>
+						)}
 					</div>
 
 					{/* Stats */}
@@ -196,16 +198,18 @@ export default function ProfileModal({
 								</button>
 							</div>
 
-							<button
-								type="button"
-								onClick={() =>
-									void exportWallet({ address: user.walletAddress! })
-								}
-								className="flex w-full items-center justify-center gap-2 rounded-md border border-surface-3 bg-transparent py-2.5 text-[11px] text-text-muted transition-colors hover:bg-surface-2 hover:text-text-primary"
-							>
-								<KeyRound className="size-3.5" />
-								Export private key
-							</button>
+							{user.provider !== 'wallet' && (
+								<button
+									type="button"
+									onClick={() =>
+										void exportWallet({ address: user.walletAddress! })
+									}
+									className="flex w-full items-center justify-center gap-2 rounded-md border border-surface-3 bg-transparent py-2.5 text-[11px] text-text-muted transition-colors hover:bg-surface-2 hover:text-text-primary"
+								>
+									<KeyRound className="size-3.5" />
+									Export private key
+								</button>
+							)}
 						</div>
 					)}
 				</div>

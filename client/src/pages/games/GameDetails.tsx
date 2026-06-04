@@ -57,6 +57,7 @@ export default function GameDetails() {
 	const { gameId = '' } = useParams();
 	const player = playerService.getIdentity();
 	const walletAddress = useAuthStore(s => s.user?.walletAddress);
+	const userProvider = useAuthStore(s => s.user?.provider);
 	const [game, setGame] = useState<Game | null>(null);
 	const [gameError, setGameError] = useState<string | null>(null);
 	const [isLoadingGame, setIsLoadingGame] = useState(true);
@@ -208,13 +209,12 @@ export default function GameDetails() {
 			const validAfter = 0;
 			const validBefore = Math.floor(Date.now() / 1000) + 3600;
 
-			// User signs the authorization — no gas needed, no CELO required
-			const { signature } = await signTypedData({
+			const typedData = {
 				domain: {
 					name: 'USDC',
 					version: '2',
 					chainId: CELO_CHAIN_ID,
-					verifyingContract: USDC_CONTRACT as `0x${string}`,
+					verifyingContract: USDC_CONTRACT,
 				},
 				types: {
 					TransferWithAuthorization: [
@@ -228,14 +228,35 @@ export default function GameDetails() {
 				},
 				primaryType: 'TransferWithAuthorization',
 				message: {
-					from: walletAddress as `0x${string}`,
-					to: TREASURY_WALLET as `0x${string}`,
+					from: walletAddress,
+					to: TREASURY_WALLET,
 					value,
 					validAfter,
 					validBefore,
 					nonce,
 				},
-			});
+			};
+
+			let signature: string;
+
+			if (userProvider === 'wallet') {
+				// User connected their own wallet — sign with window.ethereum
+				const eth = (window as unknown as { ethereum?: { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> } }).ethereum;
+				if (!eth) throw new Error('Wallet not found');
+				signature = await eth.request({
+					method: 'eth_signTypedData_v4',
+					params: [walletAddress, JSON.stringify(typedData)],
+				}) as string;
+			} else {
+				// Privy embedded wallet
+				const result = await signTypedData({
+					domain: typedData.domain as Parameters<typeof signTypedData>[0]['domain'],
+					types: typedData.types,
+					primaryType: typedData.primaryType,
+					message: typedData.message as Parameters<typeof signTypedData>[0]['message'],
+				});
+				signature = result.signature;
+			}
 
 			setPaymentModal(null);
 			await handlePlay({

@@ -42,6 +42,7 @@ export default function Header() {
 	}, [user?.walletAddress]);
 
 	const handleLogout = async () => {
+		const wasWalletUser = user?.provider === 'wallet';
 		try {
 			setIsAuthBusy(true);
 			await authService.logout();
@@ -50,9 +51,13 @@ export default function Header() {
 		} finally {
 			setIsAuthBusy(false);
 		}
+		if (wasWalletUser) {
+			window.location.href = '/';
+		}
 	};
 
-	const blockie = user ? makeBlockie(user.email ?? user.id) : null;
+	const blockieSeed = user ? (user.email || user.walletAddress || user.id) : null;
+	const blockie = blockieSeed ? makeBlockie(blockieSeed) : null;
 
 	return (
 		<>
@@ -153,9 +158,11 @@ export default function Header() {
 										<p className="truncate font-manrope text-sm font-semibold text-text-primary">
 											{user.name}
 										</p>
-										<p className="truncate text-[11px] text-text-muted">
-											{user.email}
-										</p>
+										{user.walletAddress && (
+											<p className="truncate font-ps2p text-[8px] text-text-muted">
+												{user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+											</p>
+										)}
 									</div>
 								</div>
 

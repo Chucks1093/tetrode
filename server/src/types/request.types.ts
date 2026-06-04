@@ -6,7 +6,7 @@ declare global {
       currentProfile?: {
          id: string;
          publicId: string;
-         email: string;
+         email: string | null;
          name: string;
          type: UserType;
          status: UserStatus;

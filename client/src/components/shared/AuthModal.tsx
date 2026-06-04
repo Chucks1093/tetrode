@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, ChevronRight, Copy, Eye, EyeOff, X } from 'lucide-react';
+import { Check, ChevronRight, Copy, Eye, EyeOff, Wallet, X } from 'lucide-react';
 import { useEffect, useState, type KeyboardEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,46 @@ interface AuthModalProps {
 	initialMode?: AuthMode;
 }
 
-type AuthMode = 'signin' | 'signup' | 'verify' | 'onboarding' | 'wallet';
+type AuthMode = 'signin' | 'signup' | 'verify' | 'onboarding' | 'wallet' | 'wallet-onboarding' | 'wallet-select';
+
+interface WalletProvider {
+	info: { uuid: string; name: string; icon: string; rdns: string };
+	provider: { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
+}
+
+const CELO_CHAIN_ID = '0xa4ec'; // 42220
+
+async function switchToCelo(provider: WalletProvider['provider']) {
+	try {
+		await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CELO_CHAIN_ID }] });
+	} catch (err: unknown) {
+		if ((err as { code?: number }).code === 4902) {
+			await provider.request({
+				method: 'wallet_addEthereumChain',
+				params: [{
+					chainId: CELO_CHAIN_ID,
+					chainName: 'Celo',
+					nativeCurrency: { name: 'CELO', symbol: 'CELO', decimals: 18 },
+					rpcUrls: ['https://forno.celo.org'],
+					blockExplorerUrls: ['https://celoscan.io'],
+				}],
+			});
+		}
+	}
+}
+
+function discoverWallets(): Promise<WalletProvider[]> {
+	return new Promise(resolve => {
+		const found: WalletProvider[] = [];
+		const handler = (e: Event) => found.push((e as CustomEvent<WalletProvider>).detail);
+		window.addEventListener('eip6963:announceProvider', handler);
+		window.dispatchEvent(new Event('eip6963:requestProvider'));
+		setTimeout(() => {
+			window.removeEventListener('eip6963:announceProvider', handler);
+			resolve(found);
+		}, 200);
+	});
+}
 
 export default function AuthModal({
 	open,
@@ -47,6 +86,10 @@ export default function AuthModal({
 	const [showPassword, setShowPassword] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [walletLoading, setWalletLoading] = useState(false);
+	const [pendingWalletAuth, setPendingWalletAuth] = useState<{
+		walletAddress: string; signature: string; message: string;
+	} | null>(null);
+	const [detectedWallets, setDetectedWallets] = useState<WalletProvider[]>([]);
 	const [walletCopied, setWalletCopied] = useState(false);
 	const [timeLeft, setTimeLeft] = useState(45);
 	const [canResend, setCanResend] = useState(false);
@@ -62,6 +105,8 @@ export default function AuthModal({
 	const isVerify = mode === 'verify';
 	const isOnboarding = mode === 'onboarding';
 	const isWalletStep = mode === 'wallet';
+	const isWalletOnboarding = mode === 'wallet-onboarding';
+	const isWalletSelect = mode === 'wallet-select';
 
 	useEffect(() => {
 		if (!open) {
@@ -76,6 +121,8 @@ export default function AuthModal({
 			setWalletLoading(false);
 			setTimeLeft(45);
 			setCanResend(false);
+			setPendingWalletAuth(null);
+		setDetectedWallets([]);
 		}
 	}, [initialMode, open]);
 
@@ -125,9 +172,15 @@ export default function AuthModal({
 	const openOnboardingStep = (nextName?: string) => { setMode('onboarding'); setName(nextName ?? currentUser?.name ?? ''); };
 	const openWalletStep = (address: string) => { setWalletAddress(address); setMode('wallet'); };
 
-	const finishAuthFlow = () => {
+	const finishAuthFlow = (isWallet = false) => {
 		const redirectFromQuery = searchParams.get('redirect');
-		const redirectTarget = redirectFromQuery || authService.consumeRedirectAfterLogin();
+		const redirectTarget = redirectFromQuery || authService.consumeRedirectAfterLogin() || '/';
+		// Wallet users need a hard reload so PrivyProvider never mounts for them
+		if (isWallet) {
+			onOpenChange(false);
+			window.location.href = redirectTarget.startsWith('/') ? redirectTarget : '/';
+			return;
+		}
 		if (redirectTarget && redirectTarget.startsWith('/')) {
 			onOpenChange(false);
 			navigate(redirectTarget, { replace: true });
@@ -190,7 +243,76 @@ export default function AuthModal({
 		} finally { setLoading(false); }
 	};
 
+	const connectWithProvider = async (wallet: WalletProvider) => {
+		try {
+			setLoading(true);
+			const accounts = await wallet.provider.request({ method: 'eth_requestAccounts' }) as string[];
+			const address = accounts[0];
+			if (!address) throw new Error('No account selected');
+
+			await switchToCelo(wallet.provider);
+
+			const message = `Welcome to Tetrode!\n\nSign this message to verify your wallet.\n\nNonce: ${Date.now()}`;
+			const signature = await wallet.provider.request({ method: 'personal_sign', params: [message, address] }) as string;
+
+			const result = await authService.walletAuth({ walletAddress: address, signature, message });
+
+			if ('requiresOnboarding' in result) {
+				setPendingWalletAuth({ walletAddress: address, signature, message });
+				setWalletAddress(address);
+				setName('');
+				setMode('wallet-onboarding');
+			} else {
+				showToast.success('Wallet connected');
+				finishAuthFlow(true);
+			}
+		} catch (error) {
+			showToast.error(error instanceof Error ? error.message : 'Wallet connection failed');
+			setMode('signin');
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleWalletConnect = async () => {
+		try {
+			setLoading(true);
+			const wallets = await discoverWallets();
+
+			if (wallets.length === 0) {
+				showToast.error('No wallet found. Install MetaMask or open in a Web3 browser.');
+				return;
+			}
+
+			if (wallets.length === 1) {
+				await connectWithProvider(wallets[0]!);
+				return;
+			}
+
+			// Multiple wallets found — let user pick
+			setDetectedWallets(wallets);
+			setMode('wallet-select');
+		} catch (error) {
+			showToast.error(error instanceof Error ? error.message : 'Wallet connection failed');
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	const handleContinue = async () => {
+		if (mode === 'wallet-onboarding') {
+			if (!name.trim() || name.trim().length < 2) { showToast.error('Enter your name.'); return; }
+			if (!pendingWalletAuth) return;
+			try {
+				setLoading(true);
+				await authService.walletAuth({ ...pendingWalletAuth, name: name.trim() });
+				showToast.success('Account created');
+				finishAuthFlow(true);
+			} catch (error) {
+				showToast.error(error instanceof Error ? error.message : 'Could not create account');
+			} finally { setLoading(false); }
+			return;
+		}
 		if (isOnboarding) {
 			if (!name.trim() || name.trim().length < 2) { showToast.error('Enter your name.'); return; }
 			try {
@@ -225,6 +347,10 @@ export default function AuthModal({
 
 	const title = isWalletStep
 		? 'Wallet ready'
+		: isWalletOnboarding
+		? 'What should we call you?'
+		: isWalletSelect
+		? 'Choose your wallet'
 		: isOnboarding
 		? 'What should we call you?'
 		: isVerify
@@ -235,6 +361,10 @@ export default function AuthModal({
 
 	const subtitle = isWalletStep
 		? 'Your embedded wallet is set up and linked to your account.'
+		: isWalletOnboarding
+		? 'This name is what other players will see in-game.'
+		: isWalletSelect
+		? 'Select the wallet you want to connect.'
 		: isOnboarding
 		? 'This name is what other players will see in-game.'
 		: isVerify
@@ -244,12 +374,12 @@ export default function AuthModal({
 		: 'Sign in to continue to Tetrode.';
 
 	const ctaLabel = loading
-		? isOnboarding ? 'Saving…'
+		? (isOnboarding || isWalletOnboarding) ? 'Saving…'
 		: isVerify ? 'Verifying…'
 		: isSignUp ? 'Creating…'
 		: 'Signing in…'
 		: isWalletStep ? 'Enter Tetrode'
-		: isOnboarding ? 'Continue'
+		: (isOnboarding || isWalletOnboarding) ? 'Continue'
 		: isVerify ? 'Verify'
 		: 'Continue';
 
@@ -287,7 +417,39 @@ export default function AuthModal({
 
 					{/* Body */}
 					<div className="mt-5">
-						{isWalletStep ? (
+						{isWalletSelect ? (
+							<div className="space-y-2">
+								{detectedWallets.map(wallet => (
+									<button
+										key={wallet.info.uuid}
+										type="button"
+										onClick={() => void connectWithProvider(wallet)}
+										disabled={loading}
+										className="flex w-full items-center gap-3 rounded-md border border-surface-3 bg-surface-2 px-4 py-3 text-left transition-colors hover:border-gold-base/40 hover:bg-surface-3 disabled:opacity-50"
+									>
+										<img src={wallet.info.icon} alt={wallet.info.name} className="size-6 shrink-0 rounded-sm" />
+										<span className="text-sm text-text-primary">{wallet.info.name}</span>
+									</button>
+								))}
+							</div>
+						) : isWalletOnboarding ? (
+							<div>
+								<label className="mb-1.5 block text-xs font-medium text-text-secondary">
+									Display name
+								</label>
+								<Input
+									type="text"
+									value={name}
+									onChange={e => setName(e.target.value)}
+									onKeyDown={handleAuthKeyDown}
+									placeholder="Enter your name"
+									className="h-10 rounded-md border-surface-3 bg-surface-2 px-3 text-sm text-text-primary placeholder:text-text-muted focus-visible:border-gold-base focus-visible:ring-gold-base/20 dark:bg-surface-2"
+								/>
+								<p className="mt-1.5 break-all font-ps2p text-[7px] leading-relaxed text-text-muted">
+									{walletAddress}
+								</p>
+							</div>
+						) : isWalletStep ? (
 							<div className="space-y-3">
 								<div>
 									<p className="mb-1.5 text-xs font-medium text-text-secondary">
@@ -349,13 +511,24 @@ export default function AuthModal({
 									Continue with Google
 								</Button>
 
-								<div className="my-4 flex items-center gap-3">
+								<div className="my-3 flex items-center gap-3">
 									<div className="h-px flex-1 bg-surface-3" />
 									<span className="text-[11px] text-text-muted">or</span>
 									<div className="h-px flex-1 bg-surface-3" />
 								</div>
 
-								<div className="space-y-3">
+								{/* Connect Wallet */}
+								<Button
+									type="button"
+									onClick={() => void handleWalletConnect()}
+									disabled={loading}
+									className="h-9 w-full rounded-md border border-gold-base/30 bg-gold-base/10 text-xs text-gold-base shadow-none hover:bg-gold-base/20 hover:text-gold-bright disabled:opacity-50"
+								>
+									<Wallet className="size-4 shrink-0" />
+									{loading ? 'Connecting…' : 'Connect Wallet'}
+								</Button>
+
+								<div className="hidden space-y-3">
 									<div>
 										<label className="mb-1.5 block text-xs font-medium text-text-secondary">
 											Email
@@ -437,12 +610,13 @@ export default function AuthModal({
 							</div>
 						)}
 
-						{/* CTA */}
+						{/* CTA — hidden on signin/signup since Google and Connect Wallet have their own handlers */}
 						<Button
 							type="button"
 							disabled={loading}
 							onClick={handleContinue}
-							className="mt-5 h-10 w-full gap-1 rounded-md bg-white text-sm font-medium text-black hover:bg-white/90 disabled:opacity-50"
+							className={`mt-5 h-10 w-full gap-1 rounded-md bg-white text-sm font-medium text-black hover:bg-white/90 disabled:opacity-50 ${(!isVerify && !isOnboarding && !isWalletStep && !isWalletOnboarding) ? 'hidden' : ''}`}
+							style={{ display: isWalletSelect ? 'none' : undefined }}
 						>
 							{ctaLabel}<ChevronRight className="size-[18px] text-black" />
 						</Button>
@@ -452,7 +626,14 @@ export default function AuthModal({
 				{/* Footer */}
 				<div className="border-t border-surface-3 bg-surface-2 px-6 py-3 text-center">
 					<p className="text-[11px] text-text-muted">
-						{isWalletStep ? (
+						{(isWalletSelect || isWalletOnboarding) ? (
+							<>
+								{isWalletSelect ? 'Wrong choice?' : 'Wrong wallet?'}{' '}
+								<button type="button" onClick={() => setMode('signin')} className="font-medium text-text-primary underline underline-offset-2 hover:text-gold-bright">
+									Go back
+								</button>
+							</>
+						) : isWalletStep ? (
 							<>
 								To export your private key, go to your{' '}
 								<span className="font-medium text-text-primary">Profile</span>.

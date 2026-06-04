@@ -191,3 +191,21 @@ export const updateProfilePassword = async (input: {
       data: { passwordHash: input.passwordHash },
    });
 };
+
+export const findUserByWalletAddress = async (walletAddress: string) => {
+   return prisma.profile.findUnique({
+      where: { walletAddress },
+   });
+};
+
+export const createWalletUser = async (input: { name: string; walletAddress: string }) => {
+   return prisma.profile.create({
+      data: {
+         name: input.name.trim(),
+         walletAddress: input.walletAddress,
+         provider: 'wallet',
+         emailVerified: false,
+         type: 'HUMAN',
+      },
+   });
+};

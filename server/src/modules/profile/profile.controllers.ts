@@ -3,6 +3,7 @@ import { mintFreePass } from '../../services/leaderboard.service';
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { createPrivateKey, createSign } from 'crypto';
+import { verifyMessage } from 'viem';
 import { envConfig, resolvedPrivyJwtPrivateKey } from '../../config';
 import { AuthService } from '../../services/auth.service';
 import { AsyncController } from '../../types/auth.types';
@@ -18,6 +19,7 @@ import {
    ResendVerificationSchema,
    ResetPasswordSchema,
    VerifyEmailSchema,
+   WalletAuthSchema,
 } from './profile.schemas';
 import {
    checkUserEmailExists,
@@ -27,6 +29,8 @@ import {
    createVerificationCodeForProfile,
    findUserByEmail,
    findUserById,
+   findUserByWalletAddress,
+   createWalletUser,
    getLatestValidPasswordResetCode,
    getLatestValidVerificationCode,
    markPasswordResetCodeUsed,
@@ -53,7 +57,7 @@ const buildGoogleClient = (): OAuth2Client => {
 const toSafeProfile = (profile: {
    id: string;
    publicId?: string | null;
-   email: string;
+   email?: string | null;
    name: string;
    type: 'HUMAN' | 'AGENT';
    status: 'ACTIVE' | 'SUSPENDED' | 'DELETED';
@@ -65,7 +69,7 @@ const toSafeProfile = (profile: {
 }) => ({
    id: profile.publicId ?? profile.id,
    name: profile.name,
-   email: profile.email,
+   email: profile.email ?? '',
    type: profile.type,
    status: profile.status,
    avatarUrl: profile.avatarUrl ?? undefined,
@@ -398,6 +402,14 @@ export const httpProfilePrivyToken: AsyncController = async (
          });
       }
 
+      if (req.currentProfile.provider === 'wallet') {
+         return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: 'Privy auth not available for wallet accounts',
+            data: null,
+         });
+      }
+
       const profile = await findUserById(req.currentProfile.id);
       if (!profile) {
          return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -409,7 +421,7 @@ export const httpProfilePrivyToken: AsyncController = async (
 
       const token = createPrivyCustomAuthToken({
          id: profile.id,
-         email: profile.email,
+         email: profile.email ?? '',
          name: profile.name,
       });
 
@@ -741,6 +753,74 @@ export const httpProfileForgotPassword: AsyncController = async (
       return res.status(HTTP_STATUS.OK).json({
          success: true,
          message: 'If the email exists, reset code has been sent',
+      });
+   } catch (error) {
+      next(error);
+   }
+};
+
+export const httpProfileWalletAuth: AsyncController = async (req, res, next) => {
+   try {
+      const validated = WalletAuthSchema.parse(req.body);
+      const { walletAddress, signature, message, name } = validated;
+
+      // Verify the signature — proves ownership of the wallet
+      const isValid = await verifyMessage({
+         address: walletAddress as `0x${string}`,
+         message,
+         signature: signature as `0x${string}`,
+      });
+
+      if (!isValid) {
+         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+            success: false,
+            message: 'Invalid wallet signature',
+         });
+      }
+
+      // Check message is fresh (within 5 minutes) to prevent replay attacks
+      const nonceMatch = message.match(/Nonce: (\d+)/);
+      if (nonceMatch) {
+         const nonce = parseInt(nonceMatch[1]!, 10);
+         if (Date.now() - nonce > 5 * 60 * 1000) {
+            return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+               success: false,
+               message: 'Signature expired. Please try again.',
+            });
+         }
+      }
+
+      const normalizedAddress = walletAddress.toLowerCase();
+
+      // Find existing user by wallet address
+      let user = await findUserByWalletAddress(normalizedAddress);
+
+      if (user) {
+         const sessionToken = await createSessionTokenForProfile(req, user.id);
+         return res.status(HTTP_STATUS.OK).json({
+            success: true,
+            message: 'Login successful',
+            data: { profile: toSafeProfile(user), sessionToken },
+         });
+      }
+
+      // New wallet — need a name to register
+      if (!name) {
+         return res.status(HTTP_STATUS.OK).json({
+            success: true,
+            message: 'Wallet not registered',
+            data: { requiresOnboarding: true },
+         });
+      }
+
+      user = await createWalletUser({ name, walletAddress: normalizedAddress });
+      void mintFreePass(normalizedAddress);
+
+      const sessionToken = await createSessionTokenForProfile(req, user.id);
+      return res.status(HTTP_STATUS.CREATED).json({
+         success: true,
+         message: 'Account created',
+         data: { profile: toSafeProfile(user), sessionToken },
       });
    } catch (error) {
       next(error);

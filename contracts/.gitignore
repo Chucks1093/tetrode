@@ -8,7 +8,7 @@ lib/
 # Environment
 .env
 
-broadcast/
+broadcast/*
 
 # Broadcast (contains sensitive tx data)
 broadcast/*/31337/

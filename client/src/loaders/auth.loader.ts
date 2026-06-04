@@ -23,7 +23,7 @@ export async function requireAuthLoader({
 			);
 		}
 
-		if (!profile.emailVerified) {
+		if (!profile.emailVerified && profile.provider !== 'wallet') {
 			return redirect('/auth/verify');
 		}
 

@@ -207,6 +207,36 @@ class AuthService extends BaseApiService {
 		}
 	}
 
+	private clearPrivyCache(): void {
+		try {
+			Object.keys(localStorage)
+				.filter(k => k.startsWith('privy:') || k.startsWith('privy-'))
+				.forEach(k => localStorage.removeItem(k));
+		} catch { /* ignore */ }
+	}
+
+	async walletAuth(input: {
+		walletAddress: string;
+		signature: string;
+		message: string;
+		name?: string;
+	}): Promise<{ requiresOnboarding: true } | User> {
+		try {
+			const response = await this.api.post<APIResponse<LoginResponse & { requiresOnboarding?: boolean }>>(
+				'/profile/wallet-auth',
+				input
+			);
+			const data = response.data.data;
+			if (data.requiresOnboarding) return { requiresOnboarding: true };
+			this.clearPrivyCache();
+			this.setUser(data.profile!);
+			this.setSessionToken(data.sessionToken);
+			return data.profile!;
+		} catch (error) {
+			throw this.handleError(error);
+		}
+	}
+
 	async forgotPassword(email: string): Promise<void> {
 		try {
 			await this.api.post('/profile/password/forgot', { email });

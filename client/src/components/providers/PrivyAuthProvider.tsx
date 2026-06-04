@@ -4,7 +4,30 @@ import {
 } from '@privy-io/react-auth';
 import { type ReactNode, useCallback } from 'react';
 import { authService } from '@/services/auth.service';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { env } from '@/utils/env.utils';
+
+function isWalletProviderFromStorage(): boolean {
+	try {
+		const raw = localStorage.getItem('tetrode_user');
+		if (!raw) return false;
+		const parsed = JSON.parse(raw) as { state?: { user?: { provider?: string } } };
+		return parsed?.state?.user?.provider === 'wallet';
+	} catch {
+		return false;
+	}
+}
+
+function clearPrivyCache(): void {
+	try {
+		const keysToRemove = Object.keys(localStorage).filter(k =>
+			k.startsWith('privy:') || k.startsWith('privy-')
+		);
+		keysToRemove.forEach(k => localStorage.removeItem(k));
+	} catch {
+		// ignore
+	}
+}
 
 const celoMainnet = {
 	id: 42220,
@@ -17,10 +40,15 @@ const celoMainnet = {
 } as const;
 
 function PrivyJwtBridge({ children }: { children: ReactNode }) {
+	const isWalletUser = useAuthStore(s => s.user?.provider === 'wallet');
+	const isWalletUserFromStorage = isWalletProviderFromStorage();
+	const skipPrivy = isWalletUser || isWalletUserFromStorage;
+
 	useSyncJwtBasedAuthState({
-		enabled: Boolean(env.VITE_PRIVY_APP_ID),
+		enabled: Boolean(env.VITE_PRIVY_APP_ID) && !skipPrivy,
 		getExternalJwt: async () => {
 			if (!authService.isAuthenticated()) return undefined;
+			if (authService.getUser()?.provider === 'wallet') return undefined;
 			return authService.getPrivyAuthToken();
 		},
 		subscribe: useCallback(onAuthStateChange => {
@@ -36,7 +64,8 @@ export default function PrivyAuthProvider({
 }: {
 	children: ReactNode;
 }) {
-	if (!env.VITE_PRIVY_APP_ID) {
+	if (!env.VITE_PRIVY_APP_ID || isWalletProviderFromStorage()) {
+		clearPrivyCache();
 		return children;
 	}
 

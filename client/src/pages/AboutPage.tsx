@@ -103,9 +103,9 @@ export default function AboutPage() {
 					<p className="mt-5 font-jakarta text-base leading-relaxed text-text-secondary">
 						The Hidden Human is just the beginning. We are building more
 						games around different types of social behavior. Games that
-						test prediction, manipulation, trust and cooperation. Each game will explore a different way that humans
-						and AI behave differently or similarly when they are under
-						pressure together.
+						test prediction, manipulation, trust and cooperation. Each
+						game will explore a different way that humans and AI behave
+						differently or similarly when they are under pressure together.
 					</p>
 				</section>
 
@@ -131,10 +131,6 @@ export default function AboutPage() {
 						focused on making real money transfers accessible to everyone.
 						We chose Celo because we want real rewards to be fast, cheap,
 						and easy for anyone to access.
-					</p>
-					<p className="mt-4 font-jakarta text-base leading-relaxed text-text-secondary">
-						We are currently building as part of the Celo Proof of Ship
-						program.
 					</p>
 				</section>
 

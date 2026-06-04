@@ -99,7 +99,7 @@ export default function HiddenHumanCore({
 	const navigate = useNavigate();
 	const playerIdentity = playerService.getIdentity();
 	const authUser = useAuthStore(s => s.user);
-	const blockieSeed = authUser?.email ?? authUser?.id ?? playerIdentity.actorId;
+	const blockieSeed = authUser?.email || authUser?.walletAddress || authUser?.id || playerIdentity.actorId;
 	const currentParticipant =
 		room?.participants?.find(
 			participant => participant.actorId === playerIdentity.actorId

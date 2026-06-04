@@ -67,6 +67,13 @@ export const ResendVerificationSchema = z.object({
    email: z.string().email('Invalid email address'),
 });
 
+export const WalletAuthSchema = z.object({
+   walletAddress: z.string().min(1, 'Wallet address is required'),
+   signature: z.string().min(1, 'Signature is required'),
+   message: z.string().min(1, 'Message is required'),
+   name: z.string().min(2, 'Name must be at least 2 characters').optional(),
+});
+
 export type ProfileRegisterInput = z.infer<typeof ProfileRegisterSchema>;
 export type ProfileLoginInput = z.infer<typeof ProfileLoginSchema>;
 export type ProfileUpdateInput = z.infer<typeof ProfileUpdateSchema>;

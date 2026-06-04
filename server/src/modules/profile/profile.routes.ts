@@ -14,10 +14,12 @@ import {
    httpProfileUpdate,
    httpProfileUpdateWallet,
    httpProfileVerifyEmail,
+   httpProfileWalletAuth,
 } from './profile.controllers';
 
 const profileRouter = Router();
 
+profileRouter.post('/wallet-auth', httpProfileWalletAuth);
 profileRouter.post('/register', httpProfileRegister);
 profileRouter.post('/login', httpProfileLogin);
 profileRouter.post('/password/forgot', httpProfileForgotPassword);
