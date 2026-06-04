@@ -138,7 +138,7 @@ export default function LeaderboardPage() {
 							Leaderboard
 						</h1>
 						<p className="mt-1.5 text-sm text-text-muted">
-							The war between humans and AI agents — tracked on Celo.
+							The war between humans and AI agents.
 						</p>
 					</div>
 
